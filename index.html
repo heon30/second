@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>y=ax²+q 그래프 이동 타이밍러시</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --panel: rgba(15, 23, 42, .94);
+      --panel2: rgba(30, 41, 59, .82);
+      --line: rgba(148, 163, 184, .26);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+    }
+    body {
+      margin: 0;
+      width: 100vw;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(59, 130, 246, .24), transparent 34%),
+        radial-gradient(circle at 95% 10%, rgba(249, 115, 22, .20), transparent 34%),
+        linear-gradient(180deg, #0f172a, #020617 70%, #000);
+      color: var(--text);
+      font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .wrap {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 14px;
+      padding: 14px;
+    }
+    .game {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: rgba(2, 6, 23, .64);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .42);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .side {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .42);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .title {
+      font-size: 26px;
+      font-weight: 950;
+      letter-spacing: -0.06em;
+      line-height: 1.08;
+    }
+    .sub {
+      color: #93c5fd;
+      font-weight: 850;
+      margin-top: 5px;
+    }
+    .formula {
+      padding: 15px;
+      border-radius: 20px;
+      text-align: center;
+      font-size: 27px;
+      font-weight: 950;
+      background: linear-gradient(135deg, rgba(37, 99, 235, .38), rgba(249, 115, 22, .25));
+      border: 1px solid rgba(147, 197, 253, .35);
+    }
+    .timerBox {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 13px;
+    }
+    .timerTop {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .bar {
+      width: 100%;
+      height: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(2, 6, 23, .8);
+      border: 1px solid rgba(148, 163, 184, .22);
+    }
+    .bar > div {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
+      border-radius: 999px;
+      transform-origin: left center;
+      transition: width .04s linear;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      padding: 12px;
+    }
+    .stat small {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .stat b {
+      font-size: 24px;
+      font-weight: 950;
+      color: #f8fafc;
+    }
+    .comboBox {
+      background: linear-gradient(135deg, rgba(124,58,237,.35), rgba(37,99,235,.22));
+      border: 1px solid rgba(196,181,253,.28);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .comboBox span {
+      color: #ddd6fe;
+      font-weight: 850;
+      font-size: 13px;
+    }
+    .comboBox b {
+      font-size: 30px;
+      color: #fde68a;
+      font-weight: 1000;
+    }
+    .control {
+      background: rgba(30, 41, 59, .76);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 15px;
+    }
+    .bigQ {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .bigQ span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .bigQ b {
+      font-size: 42px;
+      letter-spacing: -0.05em;
+      color: #f8fafc;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+
+    .sliderRow {
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .qSign {
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 30px;
+      font-weight: 1000;
+      color: #f8fafc;
+      border: 1px solid rgba(148, 163, 184, .28);
+      background: rgba(15, 23, 42, .72);
+      user-select: none;
+      padding: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .qSign.minus {
+      color: #93c5fd;
+      box-shadow: inset 0 0 22px rgba(59, 130, 246, .14);
+    }
+    .qSign.plus {
+      color: #fca5a5;
+      box-shadow: inset 0 0 22px rgba(239, 68, 68, .14);
+    }
+    .qRangeLabels {
+      display: flex;
+      justify-content: space-between;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 900;
+      margin: 5px 52px 0;
+    }
+    .qDirectionHint {
+      margin-top: 8px;
+      padding: 9px 10px;
+      border-radius: 13px;
+      background: rgba(2, 6, 23, .38);
+      border: 1px dashed rgba(148, 163, 184, .28);
+      color: #dbeafe;
+      font-size: 13px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 11px 12px;
+      margin-top: 10px;
+      border: none;
+      outline: none;
+      border-radius: 14px;
+      font-size: 22px;
+      font-weight: 950;
+      text-align: center;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+    .btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+    button {
+      border: 0;
+      border-radius: 15px;
+      padding: 13px 10px;
+      color: white;
+      font-weight: 950;
+      cursor: pointer;
+      transition: transform .1s, filter .1s;
+    }
+    button:active { transform: scale(.97); }
+    .small {
+      background: rgba(51, 65, 85, .98);
+    }
+    .autoNotice {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 12px;
+      border-radius: 15px;
+      background: rgba(34, 197, 94, .15);
+      border: 1px solid rgba(74, 222, 128, .28);
+      color: #bbf7d0;
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .rule {
+      background: rgba(8, 47, 73, .54);
+      border: 1px solid rgba(56, 189, 248, .24);
+      border-radius: 18px;
+      padding: 14px;
+      color: #dbeafe;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .rule b { color: #fde68a; }
+    .log {
+      flex: 1;
+      min-height: 110px;
+      overflow: auto;
+      background: rgba(2, 6, 23, .56);
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 18px;
+      padding: 12px;
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .log div {
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, .12);
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2, 6, 23, .84);
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      width: min(700px, 94vw);
+      border-radius: 28px;
+      border: 1px solid rgba(147, 197, 253, .34);
+      background: rgba(15, 23, 42, .97);
+      padding: 30px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+    }
+    .card h1 {
+      margin: 0 0 10px;
+      font-size: 40px;
+      letter-spacing: -0.07em;
+    }
+    .card p {
+      margin: 9px 0;
+      color: #cbd5e1;
+      line-height: 1.65;
+    }
+    .start {
+      margin-top: 17px;
+      width: 260px;
+      font-size: 20px;
+      background: linear-gradient(135deg, #f97316, #dc2626);
+    }
+    .kbd {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #111827;
+      color: #f8fafc;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .resultFlash {
+      position: absolute;
+      left: 50%;
+      top: 24%;
+      transform: translate(-50%, -50%);
+      font-size: 58px;
+      font-weight: 1000;
+      letter-spacing: -0.06em;
+      text-shadow: 0 6px 30px rgba(0,0,0,.55);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 5;
+      transition: .16s ease;
+      white-space: nowrap;
+    }
+
+    /* 태블릿 터치 조작 개선 */
+    input[type="range"] {
+      height: 34px;
+      touch-action: pan-y;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #60a5fa, #e5e7eb, #f87171);
+      border: 1px solid rgba(148, 163, 184, .28);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 32px;
+      height: 32px;
+      margin-top: -10px;
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 4px solid #38bdf8;
+      box-shadow: 0 6px 18px rgba(0,0,0,.35);
+    }
+    input[type="range"]::-moz-range-track {
+      height: 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #60a5fa, #e5e7eb, #f87171);
+      border: 1px solid rgba(148, 163, 184, .28);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 4px solid #38bdf8;
+      box-shadow: 0 6px 18px rgba(0,0,0,.35);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: hidden;
+      }
+      .wrap {
+        grid-template-columns: minmax(0, 1fr) 310px;
+        gap: 10px;
+        padding: 10px;
+      }
+      .side {
+        padding: 13px;
+        gap: 10px;
+        border-radius: 20px;
+      }
+      .game {
+        border-radius: 20px;
+      }
+      .title {
+        font-size: 22px;
+      }
+      .sub {
+        font-size: 13px;
+      }
+      .formula {
+        font-size: 23px;
+        padding: 12px;
+      }
+      .timerBox,
+      .control,
+      .rule,
+      .stat,
+      .comboBox {
+        border-radius: 15px;
+      }
+      .stats {
+        gap: 8px;
+      }
+      .stat {
+        padding: 9px;
+      }
+      .stat b {
+        font-size: 21px;
+      }
+      .bigQ b {
+        font-size: 38px;
+      }
+      .sliderRow {
+        grid-template-columns: 50px 1fr 50px;
+        gap: 9px;
+      }
+      .qSign {
+        height: 54px;
+        font-size: 36px;
+      }
+      .log {
+        display: none;
+      }
+    }
+
+    @media (orientation: portrait) and (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+      .wrap {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+      .game {
+        height: 58vh;
+        min-height: 430px;
+      }
+      .side {
+        min-height: auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+      }
+      .side > div:first-child,
+      .formula,
+      .timerBox,
+      .comboBox,
+      .control,
+      .rule {
+        grid-column: span 2;
+      }
+      .stats {
+        grid-column: span 2;
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .rule {
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 900px) and (orientation: landscape) {
+      .wrap {
+        grid-template-columns: minmax(0, 1fr) 285px;
+      }
+      .side {
+        padding: 10px;
+      }
+      .formula {
+        font-size: 21px;
+      }
+      .rule {
+        display: none;
+      }
+      .qDirectionHint {
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+      .side {
+        display: flex;
+      }
+      .game {
+        height: 54vh;
+        min-height: 360px;
+      }
+    }
+
+    @media (max-width: 900px) and (orientation: portrait) {
+      body { overflow: auto; }
+      .wrap {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+      .game {
+        height: 56vh;
+        min-height: 390px;
+      }
+      .side {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="game">
+      <canvas id="canvas"></canvas>
+      <div id="flash" class="resultFlash"></div>
+      <div id="overlay" class="overlay">
+        <div class="card">
+          <h1>y=ax²+q 그래프 이동 타이밍러시</h1>
+          <p>주어진 <b>목표 그래프</b>와 내가 조정하는 그래프를 일치시키는 게임입니다.</p>
+          <p>문제마다 <b>a값</b>이 제시되고, 플레이어는 <b>q값</b>만 조정합니다.</p>
+          <p><b>제한시간이 끝나는 순간</b> 두 그래프가 일치하면 통과됩니다.</p>
+          <p>처음 제한 시간은 <b>3초</b>, 문제를 맞힐수록 제한 시간이 점점 줄어듭니다.</p>
+          <p><span class="kbd">←</span> <span class="kbd">→</span> 또는 <span class="kbd">↑</span> <span class="kbd">↓</span> 방향키로도 q값 조정 가능</p>
+          <button class="start" onclick="startGame()">게임 시작</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="side">
+      <div>
+        <div class="title">q값 그래프<br>매칭 콤보러시</div>
+        <div class="sub">제한시간 종료 순간 판정 · q 이동 연습</div>
+      </div>
+
+      <div class="formula" id="formulaBox">y = ax² + q</div>
+
+      <div class="timerBox">
+        <div class="timerTop">
+          <span>남은 시간</span>
+          <span id="timeText">3.00초</span>
+        </div>
+        <div class="bar"><div id="timeBar"></div></div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><small>점수</small><b id="score">0</b></div>
+        <div class="stat"><small>문제</small><b id="round">1</b></div>
+        <div class="stat"><small>최고 콤보</small><b id="bestCombo">0</b></div>
+        <div class="stat"><small>남은 기회</small><b id="life">3</b></div>
+      </div>
+
+      <div class="comboBox">
+        <span>현재 콤보 / 점수 배율</span>
+        <b id="comboText">0 ×1.0</b>
+      </div>
+
+      <section class="control">
+        <div class="bigQ">
+          <span>내 q값</span>
+          <b id="qText">0</b>
+        </div>
+        <div class="sliderRow">
+          <button type="button" class="qSign minus" onclick="adjustQ(-1)" aria-label="q값 감소">−</button>
+          <input id="qSlider" type="range" min="-10" max="10" step="1" value="0" />
+          <button type="button" class="qSign plus" onclick="adjustQ(1)" aria-label="q값 증가">+</button>
+        </div>
+        <div class="qRangeLabels">
+          <span>-10</span>
+          <span>0</span>
+          <span>+10</span>
+        </div>
+        <div class="qDirectionHint">− 버튼/왼쪽은 q 감소 ↓ · + 버튼/오른쪽은 q 증가 ↑</div>
+        <input id="qNumber" type="number" min="-10" max="10" step="1" value="0" />
+        <div class="btns">
+          <div class="autoNotice">시간 종료 순간 q가 같으면 통과!</div>
+          <button class="small" onclick="togglePause()">일시정지</button>
+          <button class="small" onclick="newGame()">처음부터</button>
+        </div>
+      </section>
+
+      <div class="rule">
+        <b>게임 규칙</b><br>
+        주황색 그래프는 <b>목표 그래프</b>, 파란색 그래프는 <b>내 그래프</b>입니다.<br>
+        두 그래프는 같은 <b>a값</b>을 가지고 있고, 플레이어는 <b>q값만</b> 조정합니다.<br>
+        q 조절 바의 범위는 <b>-10부터 +10</b>이고, <b>왼쪽으로 갈수록 작아지고</b>, <b>오른쪽으로 갈수록 커집니다</b>.<br>
+        제한시간이 끝나는 순간 q값이 목표와 정확히 같으면 통과됩니다.<br><br>
+        연속 통과하면 <b>콤보</b>가 쌓이고 점수 배율이 올라갑니다.
+      </div>
+
+      <div id="log" class="log"></div>
+    </aside>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const overlay = document.getElementById("overlay");
+  const flash = document.getElementById("flash");
+
+  const qSlider = document.getElementById("qSlider");
+  const qNumber = document.getElementById("qNumber");
+  const qText = document.getElementById("qText");
+  const formulaBox = document.getElementById("formulaBox");
+
+  const scoreEl = document.getElementById("score");
+  const roundEl = document.getElementById("round");
+  const bestComboEl = document.getElementById("bestCombo");
+  const comboTextEl = document.getElementById("comboText");
+  const lifeEl = document.getElementById("life");
+  const timeText = document.getElementById("timeText");
+  const timeBar = document.getElementById("timeBar");
+  const logEl = document.getElementById("log");
+
+  let W = 900, H = 620;
+  const world = { xMin: -5, xMax: 5, yMin: -42, yMax: 42 };
+
+  let running = false;
+  let paused = false;
+  let last = 0;
+
+  let score = 0;
+  let round = 1;
+  let combo = 0;
+  let bestCombo = 0;
+  let life = 3;
+
+  let currentA = -1;
+  let targetQ = 0;
+  let playerQ = 0;
+  let limit = 3.0;
+  let timeLeft = 3.0;
+  let targetOptions = [];
+  let shake = 0;
+  let confetti = [];
+  let answerLock = false;
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const choice = arr => arr[Math.floor(Math.random() * arr.length)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    canvas.style.width = rect.width + "px";
+    canvas.style.height = rect.height + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    W = rect.width;
+    H = rect.height;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  function sx(x) {
+    const padL = 56, padR = 32;
+    return padL + (x - world.xMin) / (world.xMax - world.xMin) * (W - padL - padR);
+  }
+  function sy(y) {
+    const padT = 34, padB = 48;
+    return padT + (world.yMax - y) / (world.yMax - world.yMin) * (H - padT - padB);
+  }
+  function yCurve(x, q) {
+    return currentA * x * x + q;
+  }
+
+  function comboMultiplier() {
+    return 1 + Math.min(combo, 20) * 0.08;
+  }
+
+  function syncQ(v) {
+    playerQ = clamp(Math.round(Number(v)), -10, 10);
+    qSlider.value = playerQ;
+    qNumber.value = playerQ;
+    qText.textContent = playerQ;
+  }
+
+  qSlider.addEventListener("input", () => syncQ(qSlider.value));
+  qNumber.addEventListener("input", () => syncQ(qNumber.value));
+
+  function adjustQ(delta) {
+    syncQ(playerQ + delta);
+  }
+  window.adjustQ = adjustQ;
+
+  function log(text) {
+    const div = document.createElement("div");
+    div.innerHTML = text;
+    logEl.prepend(div);
+    while (logEl.children.length > 12) logEl.lastChild.remove();
+  }
+
+  function updateUI() {
+    scoreEl.textContent = score;
+    roundEl.textContent = round;
+    bestComboEl.textContent = bestCombo;
+    lifeEl.textContent = life;
+    const multi = comboMultiplier().toFixed(1);
+    comboTextEl.textContent = `${combo} ×${multi}`;
+    timeText.textContent = `${Math.max(0, timeLeft).toFixed(2)}초`;
+    timeBar.style.width = `${clamp(timeLeft / limit, 0, 1) * 100}%`;
+  }
+
+  function makeTargetOptions() {
+    targetOptions = [];
+    for (let q = -10; q <= 10; q += 1) targetOptions.push(q);
+  }
+
+  function chooseStartQ() {
+    let candidates = [];
+    for (let q = -10; q <= 10; q++) {
+      const d = Math.abs(q - targetQ);
+      if (d >= 4 && d <= 10) candidates.push(q);
+    }
+    if (!candidates.length) {
+      for (let q = -10; q <= 10; q++) {
+        if (q !== targetQ) candidates.push(q);
+      }
+    }
+    return choice(candidates);
+  }
+
+
+  function formatA(a) {
+    if (a === 1) return "x²";
+    if (a === -1) return "-x²";
+    return `${a}x²`;
+  }
+
+  function updateFormulaBox() {
+    formulaBox.textContent = `y = ${formatA(currentA)} + q`;
+  }
+
+  function chooseA() {
+    const options = [-1.2, -1, -0.8, -0.5, 0.5, 0.8, 1, 1.2];
+    let next = choice(options);
+    while (next === currentA && options.length > 1) next = choice(options);
+    currentA = next;
+    updateFormulaBox();
+  }
+
+  function prepareProblem(isFirst = false) {
+    if (!isFirst) round += 1;
+
+    limit = Math.max(0.85, 3.0 - (round - 1) * 0.075);
+    timeLeft = limit;
+
+    chooseA();
+
+    let next = choice(targetOptions);
+    while (next === targetQ && targetOptions.length > 1) next = choice(targetOptions);
+    targetQ = next;
+
+    answerLock = true;
+    syncQ(chooseStartQ());
+    answerLock = false;
+
+    log(`문제 ${round}: a=${currentA}, 제한 시간 ${limit.toFixed(2)}초 / 0초 순간에 q값이 같도록 조정하세요.`);
+    updateUI();
+  }
+
+  function startGame() {
+    makeTargetOptions();
+    running = true;
+    paused = false;
+    score = 0;
+    combo = 0;
+    bestCombo = 0;
+    life = 3;
+    round = 1;
+    confetti = [];
+    overlay.style.display = "none";
+    logEl.innerHTML = "";
+    log("게임 시작! 제한시간이 끝나는 순간 주황색 목표 그래프와 파란색 그래프가 일치하도록 조정하세요.");
+    prepareProblem(true);
+  }
+  window.startGame = startGame;
+
+  function newGame() {
+    overlay.style.display = "flex";
+    overlay.innerHTML = `
+      <div class="card">
+        <h1>y=ax²+q 그래프 이동 타이밍러시</h1>
+        <p>주어진 <b>목표 그래프</b>와 내가 조정하는 그래프를 일치시키는 게임입니다.</p>
+        <p><b>제한시간이 끝나는 순간</b> 두 그래프가 일치하면 통과됩니다.</p>
+        <p>연속 통과로 콤보를 쌓고 점수 배율을 올려보세요.</p>
+        <button class="start" onclick="startGame()">게임 시작</button>
+      </div>
+    `;
+    running = false;
+  }
+  window.newGame = newGame;
+
+  function togglePause() {
+    if (!running) return;
+    paused = !paused;
+    log(paused ? "일시정지되었습니다." : "다시 시작합니다.");
+  }
+  window.togglePause = togglePause;
+
+  function showFlash(text, color) {
+    flash.textContent = text;
+    flash.style.color = color;
+    flash.style.opacity = "1";
+    flash.style.transform = "translate(-50%, -50%) scale(1.18)";
+    setTimeout(() => {
+      flash.style.opacity = "0";
+      flash.style.transform = "translate(-50%, -50%) scale(.88)";
+    }, 360);
+  }
+
+  function spawnConfetti() {
+    for (let i = 0; i < 54; i++) {
+      confetti.push({
+        x: W / 2 + rand(-100, 100),
+        y: H * .24 + rand(-40, 35),
+        vx: rand(-220, 220),
+        vy: rand(-250, -50),
+        life: rand(.45, .95),
+        max: .95,
+        size: rand(3, 8)
+      });
+    }
+  }
+
+  function passProblem() {
+    if (!running || paused || answerLock) return;
+
+    answerLock = true;
+
+    combo += 1;
+    bestCombo = Math.max(bestCombo, combo);
+
+    const multi = comboMultiplier();
+    const base = 220;
+    const speedBonus = Math.round(limit * 80);
+    const comboBonus = Math.round(combo * 35);
+    const gain = Math.round((base + speedBonus + comboBonus) * multi);
+
+    score += gain;
+
+    showFlash(combo >= 5 ? `${combo} COMBO!` : "PASS!", combo >= 5 ? "#fde68a" : "#86efac");
+    spawnConfetti();
+    log(`통과! a=${currentA}, 목표 q=${targetQ}, 내 q=${playerQ} / ${combo}콤보 / ×${multi.toFixed(1)} / +${gain}점`);
+
+    updateUI();
+
+    setTimeout(() => {
+      if (!running) return;
+      answerLock = false;
+      prepareProblem(false);
+    }, 430);
+  }
+
+  function judgeAtDeadline() {
+    if (!running || paused || answerLock) return;
+
+    timeLeft = 0;
+
+    if (playerQ === targetQ) {
+      passProblem();
+      return;
+    }
+
+    const diff = Math.abs(playerQ - targetQ);
+    combo = 0;
+    life -= 1;
+    shake = 16;
+    showFlash("FAIL!", "#fb7185");
+    log(`실패! a=${currentA}, 0초 순간 목표 q=${targetQ}, 내 q=${playerQ}, 차이 ${diff}. 콤보가 끊겼습니다. 남은 기회 ${life}`);
+
+    if (life <= 0) {
+      endGame();
+    } else {
+      answerLock = true;
+      setTimeout(() => {
+        if (!running) return;
+        answerLock = false;
+        prepareProblem(false);
+      }, 500);
+    }
+    updateUI();
+  }
+
+  function endGame() {
+    running = false;
+    overlay.style.display = "flex";
+    overlay.innerHTML = `
+      <div class="card">
+        <h1>게임 종료</h1>
+        <p>최종 점수: <b>${score}</b></p>
+        <p>해결한 문제 수: <b>${Math.max(0, round - 1)}</b></p>
+        <p>최고 콤보: <b>${bestCombo}</b></p>
+        <p>a값에 따라 그래프의 모양은 달라지지만, q값은 그래프를 위아래로 평행이동시킨다는 점을 빠르게 판단하는 게임입니다.</p>
+        <button class="start" onclick="startGame()">다시 도전</button>
+      </div>
+    `;
+  }
+
+  function drawGrid() {
+    ctx.save();
+
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "#0f172a");
+    grad.addColorStop(1, "#020617");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = "rgba(148, 163, 184, .15)";
+    ctx.lineWidth = 1;
+
+    for (let x = -5; x <= 5; x++) {
+      ctx.beginPath();
+      ctx.moveTo(sx(x), sy(world.yMin));
+      ctx.lineTo(sx(x), sy(world.yMax));
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(203, 213, 225, .7)";
+      ctx.font = "12px system-ui";
+      if (x !== 0) ctx.fillText(String(x), sx(x) - 4, sy(0) + 18);
+    }
+
+    for (let y = -40; y <= 40; y += 5) {
+      ctx.beginPath();
+      ctx.moveTo(sx(world.xMin), sy(y));
+      ctx.lineTo(sx(world.xMax), sy(y));
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(203, 213, 225, .7)";
+      ctx.font = "12px system-ui";
+      if (y !== 0) ctx.fillText(String(y), sx(0) + 8, sy(y) + 4);
+    }
+
+    ctx.strokeStyle = "rgba(248, 250, 252, .75)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(sx(world.xMin), sy(0));
+    ctx.lineTo(sx(world.xMax), sy(0));
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(sx(0), sy(world.yMin));
+    ctx.lineTo(sx(0), sy(world.yMax));
+    ctx.stroke();
+
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "bold 13px system-ui";
+    ctx.fillText("x", sx(5) - 8, sy(0) - 8);
+    ctx.fillText("y", sx(0) + 8, sy(42));
+
+    ctx.restore();
+  }
+
+  function drawCurve(q, color, width, dash, label, glow) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    if (dash) ctx.setLineDash(dash);
+    if (glow) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = glow;
+    }
+
+    ctx.beginPath();
+    let first = true;
+    for (let x = world.xMin; x <= world.xMax; x += .03) {
+      const y = yCurve(x, q);
+      if (y < world.yMin || y > world.yMax) {
+        first = true;
+        continue;
+      }
+      if (first) {
+        ctx.moveTo(sx(x), sy(y));
+        first = false;
+      } else {
+        ctx.lineTo(sx(x), sy(y));
+      }
+    }
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+
+    if (q >= world.yMin && q <= world.yMax) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx(0), sy(q), 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = "900 15px system-ui";
+      ctx.fillStyle = color;
+      ctx.fillText(label, sx(0) + 12, sy(q) - 10);
+    }
+
+    ctx.restore();
+  }
+
+  function drawDifferenceGuide() {
+    const diff = playerQ - targetQ;
+    const abs = Math.abs(diff);
+
+    ctx.save();
+    if (abs === 0) {
+      ctx.fillStyle = "rgba(34, 197, 94, .17)";
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    const x = sx(0);
+    const y1 = sy(targetQ);
+    const y2 = sy(playerQ);
+
+    ctx.strokeStyle = abs === 0 ? "rgba(34,197,94,.95)" : "rgba(248,250,252,.55)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(x - 28, y1);
+    ctx.lineTo(x - 28, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = abs === 0 ? "#bbf7d0" : "#f8fafc";
+    ctx.font = "900 16px system-ui";
+    ctx.fillText(`q 차이: ${abs}`, x - 86, Math.min(y1, y2) - 12);
+
+    ctx.restore();
+  }
+
+  function drawHUD() {
+    ctx.save();
+
+    const diff = Math.abs(playerQ - targetQ);
+
+    ctx.fillStyle = "rgba(15, 23, 42, .76)";
+    roundRect(ctx, 18, 16, 455, 66, 18);
+    ctx.fill();
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "900 20px system-ui";
+    ctx.fillText(`a=${currentA}  |  0초 순간에 일치하면 통과!`, 36, 43);
+
+    ctx.font = "800 14px system-ui";
+    ctx.fillStyle = diff === 0 ? "#86efac" : diff <= 2 ? "#7dd3fc" : "#cbd5e1";
+    ctx.fillText(`현재 q 차이: ${diff}  |  q 범위: -10 ← 0 → +10  |  콤보: ${combo}`, 36, 67);
+
+    const lx = W - 250;
+    const ly = 20;
+    ctx.fillStyle = "rgba(15, 23, 42, .76)";
+    roundRect(ctx, lx, ly, 220, 78, 18);
+    ctx.fill();
+
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "#fb923c";
+    ctx.beginPath(); ctx.moveTo(lx + 22, ly + 26); ctx.lineTo(lx + 68, ly + 26); ctx.stroke();
+    ctx.fillStyle = "#fed7aa";
+    ctx.font = "900 14px system-ui";
+    ctx.fillText("목표 그래프", lx + 80, ly + 31);
+
+    ctx.strokeStyle = "#38bdf8";
+    ctx.beginPath(); ctx.moveTo(lx + 22, ly + 56); ctx.lineTo(lx + 68, ly + 56); ctx.stroke();
+    ctx.fillStyle = "#bae6fd";
+    ctx.fillText("내 그래프", lx + 80, ly + 61);
+
+    if (paused) {
+      ctx.fillStyle = "rgba(2, 6, 23, .68)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#f8fafc";
+      ctx.font = "1000 48px system-ui";
+      ctx.fillText("일시정지", W / 2, H / 2);
+      ctx.textAlign = "left";
+    }
+
+    ctx.restore();
+  }
+
+  function drawConfetti() {
+    ctx.save();
+    for (const c of confetti) {
+      ctx.globalAlpha = Math.max(0, c.life / c.max);
+      ctx.fillStyle = c.vx > 0 ? "#facc15" : "#38bdf8";
+      ctx.fillRect(c.x, c.y, c.size, c.size);
+    }
+    ctx.restore();
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function update(dt) {
+    if (!running || paused) return;
+
+    if (!answerLock) {
+      timeLeft -= dt;
+      if (timeLeft <= 0) judgeAtDeadline();
+    }
+
+    for (const c of confetti) {
+      c.life -= dt;
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+      c.vy += 420 * dt;
+    }
+    confetti = confetti.filter(c => c.life > 0);
+
+    shake = Math.max(0, shake - dt * 34);
+    updateUI();
+  }
+
+  function draw() {
+    ctx.save();
+    if (shake > 0) ctx.translate(rand(-shake, shake), rand(-shake, shake));
+
+    drawGrid();
+    drawDifferenceGuide();
+    drawCurve(targetQ, "#fb923c", 6, null, "목표", 16);
+    drawCurve(playerQ, "#38bdf8", 4, [9, 7], "내 그래프", 14);
+    drawConfetti();
+
+    ctx.restore();
+    drawHUD();
+  }
+
+  function loop(t) {
+    const dt = Math.min(.033, (t - last) / 1000 || 0);
+    last = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  document.addEventListener("keydown", e => {
+    if (e.key.toLowerCase() === "p") togglePause();
+
+    if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+      e.preventDefault();
+      syncQ(playerQ + 1);
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      syncQ(playerQ - 1);
+    }
+  });
+
+  makeTargetOptions();
+  syncQ(0);
+  targetQ = 5;
+  updateFormulaBox();
+  updateUI();
+})();
+</script>
+</body>
+</html>
