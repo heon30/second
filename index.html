@@ -1,0 +1,3089 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>평행사변형 리듬 러너 - Ascent to the Peak</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{
+  font-family:"Pretendard","Malgun Gothic",sans-serif;
+  background:#07101f;color:#fff
+}
+button{font-family:inherit}
+.screen{display:none;width:100vw;height:100vh}
+.screen.active{display:flex}
+
+#startScreen,#transitionScreen,#resultScreen{
+  align-items:center;justify-content:center;padding:20px
+}
+.panel{
+  width:min(760px,94vw);padding:34px;border-radius:24px;text-align:center;
+  background:linear-gradient(145deg,rgba(30,41,59,.97),rgba(15,23,42,.97));
+  border:1px solid rgba(255,255,255,.12)
+}
+.title{font-size:clamp(30px,5vw,44px);font-weight:1000;margin-bottom:15px}
+.rules{line-height:1.75;color:#cbd5e1;font-size:16px}
+.rules strong{color:#fff}
+.songBox{
+  margin:18px 0;padding:14px;border-radius:15px;background:#0f172a;
+  border:1px solid #334155
+}
+.songName{font-size:20px;font-weight:900}
+.songMeta{margin-top:5px;color:#94a3b8;font-size:14px}
+.primary{
+  margin-top:22px;padding:14px 34px;border:0;border-radius:13px;
+  background:#38bdf8;color:#082f49;font-size:20px;font-weight:900;cursor:pointer
+}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.primary:hover:not(:disabled){filter:brightness(1.08)}
+
+.hud{display:grid;gap:9px}
+.hudBox{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);
+  border-radius:13px;padding:9px;text-align:center
+}
+.hudLabel{font-size:12px;color:#94a3b8}
+.hudValue{font-size:22px;font-weight:900;margin-top:3px}
+
+#quizScreen{
+  flex-direction:column;align-items:center;padding:14px;gap:11px
+}
+#quizHud{width:min(1100px,97vw);grid-template-columns:repeat(4,1fr)}
+.quizArea{
+  width:min(1100px,97vw);flex:1;min-height:0;display:grid;
+  grid-template-columns:1.2fr .85fr;gap:13px;position:relative
+}
+.card{
+  min-width:0;min-height:0;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px
+}
+#problemCanvas{display:block;width:100%;height:100%;border-radius:13px;background:#fff}
+.quizTitle{font-size:25px;font-weight:900;margin-bottom:7px}
+.quizDesc{color:#cbd5e1;line-height:1.5;margin-bottom:9px}
+.answerBox{
+  background:#0f172a;border:2px solid #334155;border-radius:14px;
+  padding:9px 12px;margin-bottom:9px
+}
+.answerLabel{color:#94a3b8;font-size:12px}
+#answerDisplay{
+  min-height:42px;display:flex;align-items:center;justify-content:center;
+  font-size:31px;font-weight:1000
+}
+#answerDisplay.empty{font-size:16px;color:#64748b;font-weight:700}
+.numberPad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.key,.radical,.edit{
+  min-height:44px;border-radius:10px;border:1px solid #334155;
+  background:#1e293b;color:#fff;font-weight:900;cursor:pointer
+}
+.key{font-size:19px}
+.key:hover,.radical:hover,.edit:hover{background:#334155}
+.radicalPad,.editPad{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.radical{font-size:20px;min-height:47px}
+.radical.selected{background:#0369a1;border-color:#38bdf8}
+.edit{font-size:14px}
+.submit{
+  width:100%;min-height:50px;margin-top:7px;border:0;border-radius:11px;
+  background:#22c55e;color:#052e16;font-size:19px;font-weight:1000;cursor:pointer
+}
+#quizMessage{
+  min-height:24px;display:flex;align-items:center;justify-content:center;
+  margin-top:5px;font-size:16px;font-weight:900
+}
+
+.overlay{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  flex-direction:column;z-index:30;background:rgba(2,6,23,.9);border-radius:18px;text-align:center
+}
+.overlayTitle{font-size:46px;font-weight:1000;color:#f87171}
+.overlaySmall{margin-top:7px;color:#e2e8f0}
+.overlayNumber{font-size:76px;line-height:1;font-weight:1000;margin-top:10px}
+
+.transitionBig{font-size:64px;font-weight:1000;color:#38bdf8;margin:12px 0}
+#songReadyText{margin-top:12px;color:#94a3b8}
+
+#gameScreen{
+  flex-direction:column;align-items:center;padding:9px;gap:8px
+}
+#gameHud{
+  width:min(1260px,98vw);
+  grid-template-columns:1.1fr 1fr 1.15fr 1fr 1fr 1fr
+}
+#gameArea{
+  width:min(1260px,98vw);flex:1;min-height:0;position:relative;overflow:hidden;
+  border-radius:17px;border:1px solid rgba(255,255,255,.12);background:#07111f;
+  touch-action:manipulation
+}
+#gameCanvas{display:block;width:100%;height:100%}
+#judgement{
+  position:absolute;top:26px;left:50%;transform:translateX(-50%);
+  z-index:10;font-size:36px;font-weight:1000;white-space:nowrap;
+  text-shadow:0 3px 4px rgba(0,0,0,.8),0 0 12px rgba(0,0,0,.8);
+  pointer-events:none
+}
+#restartOverlay{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  flex-direction:column;z-index:20;background:rgba(3,7,18,.7);backdrop-filter:blur(2px);
+  pointer-events:none
+}
+.restartTitle{font-size:22px;font-weight:900}
+.restartNotice{font-size:14px;color:#fca5a5;margin:7px 0 15px}
+#restartNumber{font-size:108px;line-height:1;font-weight:1000}
+.hint{
+  position:absolute;left:50%;bottom:13px;transform:translateX(-50%);
+  background:rgba(0,0,0,.5);padding:8px 17px;border-radius:99px;
+  color:#e2e8f0;font-size:14px;font-weight:800;pointer-events:none;white-space:nowrap
+}
+#syncStatus{
+  position:absolute;right:13px;bottom:13px;background:rgba(0,0,0,.45);
+  border-radius:10px;padding:7px 10px;font-size:12px;color:#cbd5e1;pointer-events:none
+}
+
+.resultGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.resultItem{background:#0f172a;border-radius:14px;padding:15px}
+.resultLabel{color:#94a3b8}
+.resultValue{font-size:25px;font-weight:900;margin-top:5px}
+.finalDistance{margin-top:16px;padding:21px;border-radius:18px;background:#082f49}
+.finalDistance small{color:#bae6fd}
+.finalDistance div{font-size:48px;font-weight:1000;color:#7dd3fc}
+
+@media(max-width:800px){
+  #quizHud{grid-template-columns:repeat(2,1fr)}
+  .quizArea{grid-template-columns:1fr;overflow:auto}
+  .card:first-child{min-height:280px}
+  #gameHud{grid-template-columns:repeat(3,1fr)}
+  .resultGrid{grid-template-columns:1fr}
+}
+
+#startScreen{overflow-y:auto}
+#startScreen .panel{margin:auto}
+
+.nicknameBox{
+  margin:16px 0 12px;
+  padding:14px;
+  border-radius:15px;
+  background:#0f172a;
+  border:1px solid #334155
+}
+.nicknameLabel{
+  font-size:13px;
+  color:#94a3b8;
+  margin-bottom:8px;
+  font-weight:800
+}
+#nicknameInput{
+  width:100%;
+  height:48px;
+  border:2px solid #334155;
+  border-radius:11px;
+  background:#020617;
+  color:#fff;
+  padding:0 14px;
+  font-size:19px;
+  font-weight:900;
+  outline:none;
+  text-align:center
+}
+#nicknameInput:focus{border-color:#38bdf8}
+#nicknameMessage{
+  min-height:20px;
+  margin-top:7px;
+  color:#fbbf24;
+  font-size:13px;
+  font-weight:800
+}
+.rankingBox{
+  margin-top:18px;
+  padding:15px;
+  border-radius:16px;
+  background:rgba(2,6,23,.72);
+  border:1px solid #334155;
+  text-align:left
+}
+.rankingHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px
+}
+.rankingTitle{
+  font-size:20px;
+  font-weight:1000;
+  color:#f8fafc
+}
+.rankingStatus{
+  color:#94a3b8;
+  font-size:12px
+}
+.rankingTable{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed
+}
+.rankingTable th{
+  color:#94a3b8;
+  font-size:12px;
+  padding:6px 5px;
+  border-bottom:1px solid #334155
+}
+.rankingTable td{
+  padding:8px 5px;
+  border-bottom:1px solid rgba(51,65,85,.55);
+  font-weight:800;
+  color:#e2e8f0
+}
+.rankingTable th:nth-child(1),
+.rankingTable td:nth-child(1){
+  width:52px;
+  text-align:center
+}
+.rankingTable th:nth-child(3),
+.rankingTable td:nth-child(3){
+  width:95px;
+  text-align:right
+}
+.rankingTable th:nth-child(4),
+.rankingTable td:nth-child(4){
+  width:70px;
+  text-align:right
+}
+.rank1 td{color:#fde047}
+.rank2 td{color:#e2e8f0}
+.rank3 td{color:#fdba74}
+.emptyRank{
+  text-align:center !important;
+  color:#64748b !important;
+  padding:16px !important
+}
+#resultRankStatus{
+  margin-top:12px;
+  min-height:24px;
+  font-size:14px;
+  font-weight:900;
+  color:#7dd3fc
+}
+
+</style>
+</head>
+<body>
+
+<audio id="music" preload="none"></audio>
+
+<section id="startScreen" class="screen active">
+  <div class="panel">
+    <div class="title">평행사변형 리듬 러너</div>
+    <div class="songBox">
+      <div class="songName">🎵 Ascent to the Peak</div>
+</div>
+<div class="nicknameBox">
+      <div class="nicknameLabel">닉네임</div>
+      <input
+        id="nicknameInput"
+        type="text"
+        maxlength="12"
+        autocomplete="off"
+        placeholder="닉네임을 입력하세요"
+      >
+      <div id="nicknameMessage"></div>
+    </div>
+
+    <button id="startButton" class="primary">게임 시작</button>
+
+    <div class="rankingBox">
+      <div class="rankingHeader">
+        <div class="rankingTitle">🏆 TOP 10</div>
+        <div id="rankingStatus" class="rankingStatus">랭킹 불러오는 중...</div>
+      </div>
+
+      <table class="rankingTable">
+        <thead>
+          <tr>
+            <th>순위</th>
+            <th>닉네임</th>
+            <th>거리</th>
+            <th>정답</th>
+          </tr>
+        </thead>
+        <tbody id="rankingRows">
+          <tr>
+            <td class="emptyRank" colspan="4">랭킹 불러오는 중...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<section id="quizScreen" class="screen">
+  <div id="quizHud" class="hud">
+    <div class="hudBox"><div class="hudLabel">남은 시간</div><div id="quizTime" class="hudValue">40.0초</div></div>
+    <div class="hudBox"><div class="hudLabel">정답</div><div id="correctCount" class="hudValue">0개</div></div>
+    <div class="hudBox"><div class="hudLabel">오답</div><div id="incorrectCount" class="hudValue">0개</div></div>
+    <div class="hudBox"><div class="hudLabel">리듬게임 시간</div><div id="earnedTime" class="hudValue">0초</div></div>
+  </div>
+
+  <div class="quizArea">
+    <div class="card"><canvas id="problemCanvas" width="620" height="500"></canvas></div>
+    <div class="card">
+      <div class="quizTitle">답을 직접 입력하세요</div>
+      <div class="quizDesc">숫자와 √2, √3 버튼을 눌러 넓이를 완성하세요.</div>
+      <div class="answerBox">
+        <div class="answerLabel">입력한 답</div>
+        <div id="answerDisplay" class="empty">답을 입력하세요</div>
+      </div>
+      <div class="numberPad">
+        <button class="key numberKey" data-n="1">1</button><button class="key numberKey" data-n="2">2</button><button class="key numberKey" data-n="3">3</button>
+        <button class="key numberKey" data-n="4">4</button><button class="key numberKey" data-n="5">5</button><button class="key numberKey" data-n="6">6</button>
+        <button class="key numberKey" data-n="7">7</button><button class="key numberKey" data-n="8">8</button><button class="key numberKey" data-n="9">9</button>
+        <button id="backspaceButton" class="key">⌫</button><button class="key numberKey" data-n="0">0</button><button id="clearButton" class="key">C</button>
+      </div>
+      <div class="radicalPad">
+        <button id="sqrt2Button" class="radical">√2</button>
+        <button id="sqrt3Button" class="radical">√3</button>
+      </div>
+      <div class="editPad">
+        <button id="integerButton" class="edit">루트 없음</button>
+        <button id="resetAnswerButton" class="edit">전체 지우기</button>
+      </div>
+      <button id="submitAnswerButton" class="submit">정답 제출</button>
+      <div id="quizMessage"></div>
+    </div>
+
+    <div id="wrongOverlay" class="overlay">
+      <div class="overlayTitle">오답!</div>
+      <div class="overlaySmall">5초 후 새로운 문제가 나옵니다.</div>
+      <div id="wrongPenaltyCount" class="overlayNumber">5</div>
+    </div>
+  </div>
+</section>
+
+<section id="transitionScreen" class="screen">
+  <div class="panel">
+    <div style="color:#94a3b8">문제 풀이 종료</div>
+    <div style="margin-top:7px">획득한 플레이 시간</div>
+    <div id="transitionTime" class="transitionBig">0초</div>
+    <div class="songName">🎵 Ascent to the Peak</div>
+    <div id="songReadyText">노래를 불러오는 중...</div>
+    <button id="rhythmStartButton" class="primary" disabled>리듬게임 시작</button>
+  </div>
+</section>
+
+<section id="gameScreen" class="screen">
+  <div id="gameHud" class="hud">
+    <div class="hudBox"><div class="hudLabel">남은 시간</div><div id="gameTime" class="hudValue">0.0초</div></div>
+    <div class="hudBox"><div class="hudLabel">거리</div><div id="gameDistance" class="hudValue">0m</div></div>
+    <div class="hudBox"><div class="hudLabel">리듬 단계</div><div id="rhythmLevel" class="hudValue">기본 · 76 BPM</div></div>
+    <div class="hudBox"><div class="hudLabel">콤보</div><div id="gameCombo" class="hudValue">0</div></div>
+    <div class="hudBox"><div class="hudLabel">성공</div><div id="gameHit" class="hudValue">0</div></div>
+    <div class="hudBox"><div class="hudLabel">MISS</div><div id="gameMiss" class="hudValue">0</div></div>
+  </div>
+
+  <div id="gameArea">
+    <canvas id="gameCanvas" width="1260" height="700"></canvas>
+    <div id="judgement"></div>
+
+    <div id="restartOverlay">
+      <div class="restartTitle">이전 성공 발판에서 다시 시작</div>
+      <div class="restartNotice">카운트다운 중에도 제한시간은 계속 감소합니다.</div>
+      <div id="restartNumber">3</div>
+    </div>
+
+    <div class="hint">SPACE 또는 화면 클릭</div>
+    <div id="syncStatus">음악 동기화</div>
+  </div>
+</section>
+
+<section id="resultScreen" class="screen">
+  <div class="panel">
+    <div class="title">FINISH</div>
+    <div class="resultGrid">
+      <div class="resultItem"><div class="resultLabel">문제 정답</div><div id="resultCorrect" class="resultValue">0개</div></div>
+      <div class="resultItem"><div class="resultLabel">획득 게임시간</div><div id="resultTime" class="resultValue">0초</div></div>
+      <div class="resultItem"><div class="resultLabel">리듬 성공</div><div id="resultHit" class="resultValue">0</div></div>
+      <div class="resultItem"><div class="resultLabel">MISS</div><div id="resultMiss" class="resultValue">0</div></div>
+    </div>
+    
+    <div class="finalDistance">
+      <small><span id="resultNickname">PLAYER</span> 최종 이동 거리</small>
+      <div id="resultDistance">0m</div>
+    </div>
+
+    <div id="resultRankStatus">랭킹 저장 대기 중...</div>
+
+    <div class="rankingBox">
+      <div class="rankingHeader">
+        <div class="rankingTitle">🏆 TOP 10</div>
+        <div class="rankingStatus">최고 기록만 저장</div>
+      </div>
+
+      <table class="rankingTable">
+        <thead>
+          <tr>
+            <th>순위</th>
+            <th>닉네임</th>
+            <th>거리</th>
+            <th>정답</th>
+          </tr>
+        </thead>
+        <tbody id="resultRankingRows">
+          <tr>
+            <td class="emptyRank" colspan="4">랭킹 불러오는 중...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button id="restartButton" class="primary">다시 도전</button>
+  </div>
+</section>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<script>
+const TAU=Math.PI*2;
+const MUSIC_URL="https://dl.dropboxusercontent.com/scl/fi/d7x0u3wrgmo4j36nbsfem/Ascent-to-the-Peak.mp3?rlkey=gvx92xr9496znuahyws4pqjt5";
+const SONG_EVENTS=[1.253878, 1.648617, 2.832834, 3.645533, 4.435011, 4.852971, 6.060408, 6.849887, 7.244626, 8.452063, 9.241542, 10.05424, 10.44898, 11.656417, 12.445896, 12.840635, 14.048073, 14.860771, 15.650249, 16.044989, 17.252426, 18.041905, 18.436644, 19.667302, 20.45678, 21.246259, 21.640998, 22.848435, 23.661134, 24.450612, 24.845351, 26.052789, 26.842268, 27.237007, 28.444444, 29.257143, 29.651882, 30.441361, 31.648798, 32.043537, 33.250975, 34.040454, 34.435193, 35.64263, 36.432109, 36.850068, 38.034286, 38.846984, 39.241723, 40.449161, 41.04127, 41.337324, 42.237098, 42.840816, 43.136871, 43.7522, 44.651973, 45.255692, 45.403719, 45.551746, 46.143855, 47.032018, 47.328073, 47.937596, 48.239456, 48.831565, 49.742948, 50.335057, 50.483084, 50.631111, 50.932971, 51.542494, 52.430658, 53.045986, 53.342041, 53.93415, 54.085079, 54.241814, 55.141587, 55.733696, 56.029751, 56.633469, 57.533243, 58.148571, 58.296599, 58.444626, 59.036735, 59.332789, 60.244172, 60.836281, 61.132336, 61.747664, 61.895692, 62.043719, 62.931882, 63.541406, 63.843265, 64.435374, 65.346757, 65.938866, 66.465185, 66.728345, 67.277884, 68.090582, 68.616901, 68.748481, 68.88006, 69.416054, 69.692759, 70.484172, 71.031776, 71.294936, 71.821255, 72.610733, 73.154467, 73.291852, 73.423432, 73.949751, 74.756644, 75.025608, 75.551927, 76.078246, 76.341406, 77.148299, 77.680423, 77.812003, 77.943583, 78.493122, 78.756281, 79.2826, 80.072079, 80.608073, 80.884777, 81.411096, 82.200574, 82.744308, 83.276432, 83.539592, 84.067846, 84.878609, 85.404928, 85.536508, 85.668088, 86.204082, 86.480786, 87.270265, 87.806259, 88.082963, 88.609282, 89.39876, 89.942494, 90.079879, 90.211459, 90.737778, 91.544671, 91.813636, 92.339955, 92.868209, 93.146848, 93.942132, 94.46845, 94.60003, 94.73161, 95.281149, 95.544308, 96.070627, 96.862041, 97.409645, 97.672804, 98.199123, 98.998277, 99.538141, 100.06446, 100.327619, 100.877158, 101.666636, 102.20263, 102.34195, 102.479335, 103.005654, 103.268813, 104.081512, 104.607831, 104.87099, 105.406984, 106.210008, 106.736327, 106.867906, 106.999486, 107.54322, 108.338503, 108.601663, 109.145397, 109.677521, 109.94068, 110.730159, 111.279698, 111.411277, 111.542857, 112.069176, 112.332336, 112.86059, 113.671353, 114.197672, 114.462766, 115.01037, 115.799849, 116.326168, 116.875707, 117.138866, 117.665185, 118.477884, 119.004203, 119.135782, 119.267362, 119.793681, 120.058776, 120.869539, 121.405533, 121.684172, 122.231776, 123.021255, 123.547574, 123.679153, 123.810733, 124.337052, 125.149751, 125.41291, 125.939229, 126.488768, 126.751927, 127.541406, 128.06966, 128.20898, 128.348299, 128.880423, 129.143583, 129.671837, 130.4826, 131.008919, 131.272079, 131.808073, 132.611096, 133.137415, 133.665669, 133.944308, 134.476432, 135.267846, 135.81545, 135.947029, 136.078609, 136.604928, 136.868088, 137.680786, 138.207105, 138.470265, 138.996584, 139.809282, 140.335601, 140.469116, 140.608435, 141.148299, 141.937778, 142.200937, 142.744671, 143.276795, 143.539955, 144.346848, 144.878972, 145.010552, 145.142132, 145.66845, 145.93161, 146.459864, 147.270627, 147.806621, 148.083326, 148.609645, 149.399123, 149.942857, 150.474981, 150.738141, 151.266395, 152.077158, 152.603477, 152.735057, 152.866636, 153.40263, 153.679335, 154.468813, 154.995132, 155.260227, 155.807831, 156.606984, 157.146848, 157.278428, 157.410008, 157.936327, 158.749025, 159.012184, 159.538503, 160.064822, 160.327982, 161.14068, 161.690219, 161.821799, 161.953379, 162.479698, 162.742857, 163.269176, 164.081875, 164.608193, 164.873288, 165.420892, 166.21037, 166.736689, 167.264943, 167.543583, 168.075707, 168.888405, 169.414724, 169.546304, 169.677884, 170.204203, 170.469297, 171.28006, 171.816054, 172.092759, 172.619078, 173.408556, 173.95229, 174.089675, 174.221255, 174.747574, 175.554467, 175.823432, 176.349751, 176.878005, 177.156644, 177.951927, 178.480181, 178.619501, 178.758821, 179.290945, 179.554104, 180.080423, 180.871837, 181.419441, 181.6826, 182.208919, 183.008073, 183.547937, 184.074255, 184.337415, 184.865669, 185.678367, 186.225971, 186.357551, 186.489131, 187.01545, 187.278609, 188.091308, 188.617627, 188.880786, 189.407105, 190.206259, 190.746122, 190.877702, 191.009282, 191.535601, 192.348299, 192.621134, 193.160998, 193.687317, 193.950476, 194.739955, 195.268209, 195.407528, 195.546848, 196.078972, 196.342132, 196.870385, 197.681149, 198.207468, 198.472562, 199.020166, 199.81932, 200.359184, 200.885503, 201.148662, 201.676916, 202.48768, 203.013998, 203.145578, 203.279093, 203.826697, 204.089856, 204.879335, 205.415329, 205.692033, 206.218352, 207.007831, 207.551565, 207.688949, 207.820529, 208.346848, 209.136327, 209.399486, 209.94322, 210.475344, 210.738503, 211.545397, 212.077521, 212.209101, 212.34068, 212.866999, 213.130159, 213.679698, 214.469176, 215.00517, 215.281875, 215.808193, 216.597672, 217.141406, 217.67353, 217.936689, 218.464943, 219.275707, 219.802026, 219.933605, 220.065185, 220.601179, 220.877884, 221.667362, 222.203356, 222.48006, 223.006379, 223.795858, 224.339592, 224.476977, 224.608556, 225.134875, 225.941769, 226.210733, 226.737052, 227.265306, 227.543946, 228.339229, 228.867483, 229.006803, 229.146122, 229.678246, 229.941406, 230.46966, 231.280423, 231.806742, 232.069902, 232.596221, 233.408919, 233.935238, 234.463492, 234.742132, 235.274255, 236.065669, 236.613273, 236.744853, 236.876432, 237.402751, 237.667846, 238.478609, 239.004928, 239.270023, 239.817627, 240.607105, 241.150839, 241.288224, 241.419803, 241.946122, 242.735601, 242.99876, 243.542494, 244.074618, 244.337778, 245.144671, 245.676795, 245.808375, 245.939955, 246.468209, 246.746848, 247.278972, 248.070385, 248.617989, 248.881149, 249.407468, 250.196946, 250.74068, 251.272804, 251.535964, 252.064218, 252.874981, 253.4013, 253.53288, 253.66446, 254.200454, 254.477158, 255.266636, 255.80263, 256.079335, 256.605654, 257.404807, 257.944671, 258.076251, 258.207831, 258.73415, 259.546848, 259.810008, 260.336327, 260.86458, 261.14322, 261.938503, 262.488042, 262.619622, 262.751202, 263.277521, 263.54068, 264.090219];
+const SONG_ARCS=[180, 90, 270, 180, 180, 90, 270, 180, 90, 270, 180, 180, 90, 270, 180, 90, 270, 180, 180, 90, 270, 180, 90, 270, 180, 180, 90, 270, 180, 180, 90, 270, 180, 90, 270, 180, 90, 180, 270, 90, 270, 180, 90, 270, 180, 90, 270, 180, 90, 270, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 90, 180, 270, 180, 45, 45, 90, 180, 270, 180, 90, 180, 45, 45, 270, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 45, 45, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180, 270, 180, 90, 180, 270, 180, 180, 90, 180, 270, 180, 45, 45, 180, 90, 270, 180, 90, 180, 270, 180, 45, 45, 180, 270, 90, 180, 180, 90, 270, 180, 45, 45, 180, 90, 180];
+const SONG_STAGES=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3];
+const SONG_START_TIME=0.441179;
+const SONG_TEMPO=151.999081;
+const PULSE_BPM=75.999540;
+const STAGE2_ROTATION_BPM=101.332721;
+const STAGE3_ROTATION_BPM=113.999311;
+const BASE_ROTATION_SPEED=3.979326632;
+const STAGE2_ROTATION_SPEED=5.305768843;
+const STAGE3_ROTATION_SPEED=5.968989948;
+const HIT_WINDOW_SECONDS=0.12;
+const BASE_GAME_TIME=0;
+const QUIZ_TIME=40;
+const CORRECT_TIME_REWARD=7;
+const TIME_ITEMS=[6,12,18,24,33,42,54,66,78,90,104,118,132,145,160,175,190,205,220,235,252,270,287,305,325,345,368,390,415,440];
+
+/*
+  +5초 아이템 배치
+  - 초반에 추가 배치: 60m, 120m, 240m, 330m 등
+  - 중후반에도 너무 오래 비지 않도록 전체적으로 추가 배치
+  - 한 번 획득한 아이템은 MISS로 되돌아가도 다시 획득되지 않음
+*/
+
+const screens={
+  start:document.getElementById("startScreen"),
+  quiz:document.getElementById("quizScreen"),
+  transition:document.getElementById("transitionScreen"),
+  game:document.getElementById("gameScreen"),
+  result:document.getElementById("resultScreen")
+};
+const music=document.getElementById("music");
+
+/* ============================================================
+   Firebase / TOP 10 랭킹
+   - 점수 기준: 최종 이동 거리
+   - 동일 닉네임은 하나의 문서만 사용
+   - 기존 기록보다 높은 경우에만 갱신
+   - 전체 컬렉션에는 상위 10개 문서만 남김
+============================================================ */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBJH4uX1bj0PaEUtMDuYSyJ2GDt6f7Gz6o",
+  authDomain: "game-bb5b0.firebaseapp.com",
+  projectId: "game-bb5b0",
+  storageBucket: "game-bb5b0.firebasestorage.app",
+  messagingSenderId: "47848761419",
+  appId: "1:47848761419:web:62f872cc443d49411a85ce",
+  measurementId: "G-SJBS9DDEPL"
+};
+
+let db=null;
+let rankingReady=false;
+let currentNickname="";
+
+try{
+  if(!firebase.apps.length){
+    firebase.initializeApp(firebaseConfig);
+  }
+
+  db=firebase.firestore();
+  rankingReady=true;
+}catch(error){
+  console.error("Firebase initialization error:",error);
+}
+
+
+function cleanNickname(value){
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g," ");
+}
+
+
+function nicknameKey(value){
+  return cleanNickname(value)
+    .toLocaleLowerCase("ko-KR");
+}
+
+
+function nicknameDocId(value){
+  /*
+     같은 닉네임 = 같은 문서 ID.
+     따라서 같은 닉네임의 중복 문서가 생길 수 없다.
+  */
+  return encodeURIComponent(
+    nicknameKey(value)
+  );
+}
+
+
+function rankingSort(a,b){
+  const distanceDiff=
+    Number(b.distance||0)-
+    Number(a.distance||0);
+
+  if(distanceDiff!==0){
+    return distanceDiff;
+  }
+
+  const correctDiff=
+    Number(b.correct||0)-
+    Number(a.correct||0);
+
+  if(correctDiff!==0){
+    return correctDiff;
+  }
+
+  return String(a.nickname||"")
+    .localeCompare(
+      String(b.nickname||""),
+      "ko"
+    );
+}
+
+
+async function getAllRankings(){
+
+  if(!rankingReady || !db){
+    return [];
+  }
+
+  const snap=
+    await db
+      .collection("ascent_rankings")
+      .get();
+
+
+  const rows=[];
+
+  snap.forEach(doc=>{
+    const data=doc.data()||{};
+
+    rows.push({
+      id:doc.id,
+      nickname:
+        String(
+          data.nickname||""
+        ),
+
+      distance:
+        Number(
+          data.distance||0
+        ),
+
+      correct:
+        Number(
+          data.correct||0
+        ),
+
+      hits:
+        Number(
+          data.hits||0
+        ),
+
+      misses:
+        Number(
+          data.misses||0
+        )
+    });
+  });
+
+
+  rows.sort(
+    rankingSort
+  );
+
+
+  return rows;
+}
+
+
+function renderRankingRows(
+  elementId,
+  rows
+){
+
+  const body=
+    document.getElementById(
+      elementId
+    );
+
+
+  if(!body){
+    return;
+  }
+
+
+  body.innerHTML="";
+
+
+  if(!rows.length){
+
+    const tr=
+      document.createElement(
+        "tr"
+      );
+
+    const td=
+      document.createElement(
+        "td"
+      );
+
+    td.colSpan=4;
+    td.className="emptyRank";
+    td.textContent="아직 등록된 기록이 없습니다.";
+
+    tr.appendChild(td);
+    body.appendChild(tr);
+
+    return;
+  }
+
+
+  rows
+    .slice(0,10)
+    .forEach(
+      (row,index)=>{
+
+        const tr=
+          document.createElement(
+            "tr"
+          );
+
+        if(index===0){
+          tr.className="rank1";
+        }else if(index===1){
+          tr.className="rank2";
+        }else if(index===2){
+          tr.className="rank3";
+        }
+
+
+        const rankTd=
+          document.createElement(
+            "td"
+          );
+
+        rankTd.textContent=
+          index===0
+          ? "🥇"
+          : index===1
+          ? "🥈"
+          : index===2
+          ? "🥉"
+          : String(index+1);
+
+
+        const nameTd=
+          document.createElement(
+            "td"
+          );
+
+        nameTd.textContent=
+          row.nickname;
+
+
+        const distanceTd=
+          document.createElement(
+            "td"
+          );
+
+        distanceTd.textContent=
+          `${row.distance}m`;
+
+
+        const correctTd=
+          document.createElement(
+            "td"
+          );
+
+        correctTd.textContent=
+          `${row.correct}`;
+
+
+        tr.append(
+          rankTd,
+          nameTd,
+          distanceTd,
+          correctTd
+        );
+
+
+        body.appendChild(
+          tr
+        );
+      }
+    );
+}
+
+
+async function loadLeaderboard(){
+
+  const status=
+    document.getElementById(
+      "rankingStatus"
+    );
+
+
+  if(!rankingReady){
+
+    if(status){
+      status.textContent=
+        "Firebase 연결 실패";
+    }
+
+    renderRankingRows(
+      "rankingRows",
+      []
+    );
+
+    renderRankingRows(
+      "resultRankingRows",
+      []
+    );
+
+    return;
+  }
+
+
+  if(status){
+    status.textContent=
+      "불러오는 중...";
+  }
+
+
+  try{
+
+    const rows=
+      await getAllRankings();
+
+
+    const top10=
+      rows.slice(
+        0,
+        10
+      );
+
+
+    renderRankingRows(
+      "rankingRows",
+      top10
+    );
+
+
+    renderRankingRows(
+      "resultRankingRows",
+      top10
+    );
+
+
+    if(status){
+      status.textContent=
+        "최고 기록 기준";
+    }
+
+  }catch(error){
+
+    console.error(
+      "Leaderboard load error:",
+      error
+    );
+
+
+    if(status){
+      status.textContent=
+        "랭킹을 불러오지 못했습니다.";
+    }
+  }
+}
+
+
+async function trimLeaderboardToTop10(){
+
+  if(!rankingReady || !db){
+    return;
+  }
+
+
+  const rows=
+    await getAllRankings();
+
+
+  if(rows.length<=10){
+    return;
+  }
+
+
+  const remove=
+    rows.slice(10);
+
+
+  const batch=
+    db.batch();
+
+
+  for(const row of remove){
+
+    const ref=
+      db
+        .collection(
+          "ascent_rankings"
+        )
+        .doc(
+          row.id
+        );
+
+
+    batch.delete(ref);
+  }
+
+
+  await batch.commit();
+}
+
+
+async function saveRanking(){
+
+  const status=
+    document.getElementById(
+      "resultRankStatus"
+    );
+
+
+  const nickname=
+    cleanNickname(
+      currentNickname
+    );
+
+
+  if(!nickname){
+
+    if(status){
+      status.textContent=
+        "닉네임이 없어 랭킹을 저장하지 못했습니다.";
+    }
+
+    return;
+  }
+
+
+  if(!rankingReady || !db){
+
+    if(status){
+      status.textContent=
+        "Firebase에 연결되지 않아 랭킹을 저장하지 못했습니다.";
+    }
+
+    return;
+  }
+
+
+  if(status){
+    status.textContent=
+      "랭킹 저장 중...";
+  }
+
+
+  try{
+
+    const ref=
+      db
+        .collection(
+          "ascent_rankings"
+        )
+        .doc(
+          nicknameDocId(
+            nickname
+          )
+        );
+
+
+    let updated=false;
+    let previousDistance=null;
+
+
+    await db.runTransaction(
+      async transaction=>{
+
+        const snap=
+          await transaction.get(
+            ref
+          );
+
+
+        if(snap.exists){
+
+          previousDistance=
+            Number(
+              snap.data()
+                .distance||0
+            );
+
+
+          /*
+             같은 닉네임의 기존 최고기록보다
+             낮거나 같으면 갱신하지 않는다.
+          */
+
+          if(
+            previousDistance>=
+            state.distance
+          ){
+            return;
+          }
+        }
+
+
+        updated=true;
+
+
+        transaction.set(
+          ref,
+          {
+            nickname,
+            nicknameKey:
+              nicknameKey(
+                nickname
+              ),
+
+            distance:
+              state.distance,
+
+            correct:
+              state.correct,
+
+            hits:
+              state.hits,
+
+            misses:
+              state.misses,
+
+            updatedAt:
+              firebase.firestore
+                .FieldValue
+                .serverTimestamp()
+          },
+          {
+            merge:true
+          }
+        );
+      }
+    );
+
+
+    /*
+       새 기록을 저장한 뒤
+       실제 Firestore 문서도 TOP 10만 남긴다.
+    */
+
+    if(updated){
+      await trimLeaderboardToTop10();
+    }
+
+
+    const rows=
+      await getAllRankings();
+
+
+    const top10=
+      rows.slice(
+        0,
+        10
+      );
+
+
+    renderRankingRows(
+      "rankingRows",
+      top10
+    );
+
+
+    renderRankingRows(
+      "resultRankingRows",
+      top10
+    );
+
+
+    const myIndex=
+      top10.findIndex(
+        row=>
+          nicknameKey(
+            row.nickname
+          )===
+          nicknameKey(
+            nickname
+          )
+      );
+
+
+    if(status){
+
+      if(updated && myIndex>=0){
+
+        status.textContent=
+          `기록 저장 완료! 현재 ${myIndex+1}위`;
+
+      }else if(updated){
+
+        status.textContent=
+          "기록은 저장되었지만 TOP 10에는 들지 못했습니다.";
+
+      }else{
+
+        status.textContent=
+          `기존 최고 기록 ${previousDistance ?? 0}m가 더 높아 기록을 유지합니다.`;
+      }
+    }
+
+  }catch(error){
+
+    console.error(
+      "Ranking save error:",
+      error
+    );
+
+
+    if(status){
+      status.textContent=
+        "랭킹 저장에 실패했습니다. Firestore 설정을 확인하세요.";
+    }
+  }
+}
+
+
+let musicLoadRequested=false;
+
+function ensureMusicLoaded(){
+  /*
+     외부 네트워크 요청은 한 번만 한다.
+     Dropbox 공유 페이지를 거치지 않고
+     dl.dropboxusercontent.com의 실제 콘텐츠 주소를 직접 사용한다.
+  */
+  if(musicLoadRequested){
+    return;
+  }
+
+  musicLoadRequested=true;
+  music.src=MUSIC_URL;
+  music.load();
+}
+
+
+const state={
+  screen:"start",
+  quizRemaining:QUIZ_TIME,correct:0,incorrect:0,earned:BASE_GAME_TIME,currentProblem:null,
+  quizWrongFreeze:0,quizFinished:false,
+  answerDigits:"",answerRadical:1,
+
+  gameRemaining:0,map:[],chart:[],tileIndex:0,distance:0,
+  centerColor:0,hits:0,misses:0,combo:0,maxCombo:0,
+  restartActive:false,restartCountdown:0,judgementTimer:0,
+  collected:new Set(),musicStarted:false,
+  attemptStartAngle:Math.PI,targetAngle:0,targetArc:Math.PI,turnDirection:1,currentRotationSpeed:BASE_ROTATION_SPEED,rhythmStage:0,revealStartedAt:0
+};
+
+function showScreen(name){
+  Object.values(screens).forEach(s=>s.classList.remove("active"));
+  screens[name].classList.add("active");
+  state.screen=name;
+}
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function randChoice(a){return a[Math.floor(Math.random()*a.length)]}
+function norm(a){while(a<0)a+=TAU;while(a>=TAU)a-=TAU;return a}
+function positiveDelta(a,b){return norm(b-a)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+/* -----------------------------
+   수학 문제
+----------------------------- */
+
+const problemCanvas=document.getElementById("problemCanvas");
+const pctx=problemCanvas.getContext("2d");
+const answerDisplay=document.getElementById("answerDisplay");
+
+function exp(coeff,radical=1){return{coeff,radical}}
+function expKey(e){return `${e.coeff}|${e.radical}`}
+function areaAnswer(a,b,angle){
+  const p=a*b;
+  if(angle===30)return exp(p/2,1);
+  if(angle===45)return exp(p/2,2);
+  return exp(p/2,3);
+}
+function createProblem(){
+  const angle=randChoice([30,45,60]);
+  let a,b;
+  do{
+    a=randInt(3,12); b=randInt(3,12);
+  }while((a*b)%2!==0 || a===b);
+  return {a,b,angle,answer:areaAnswer(a,b,angle)};
+}
+function drawProblem(q){
+  const c=pctx,w=problemCanvas.width,h=problemCanvas.height;
+  c.clearRect(0,0,w,h);c.fillStyle="#fff";c.fillRect(0,0,w,h);
+  c.fillStyle="#0f172a";c.font="bold 27px sans-serif";
+  c.fillText("평행사변형의 넓이를 구하세요.",26,43);
+  c.fillStyle="#475569";c.font="18px sans-serif";
+  c.fillText("두 변의 길이와 끼인각을 이용하세요.",27,73);
+
+  const A={x:135,y:365},base=250,side=160,t=q.angle*Math.PI/180;
+  const B={x:A.x+base,y:A.y};
+  const D={x:A.x+side*Math.cos(t),y:A.y-side*Math.sin(t)};
+  const C={x:B.x+(D.x-A.x),y:B.y+(D.y-A.y)};
+
+  c.beginPath();c.moveTo(A.x,A.y);c.lineTo(B.x,B.y);c.lineTo(C.x,C.y);c.lineTo(D.x,D.y);c.closePath();
+  c.fillStyle="rgba(14,165,233,.18)";c.fill();c.lineWidth=5;c.strokeStyle="#0284c7";c.stroke();
+
+  c.fillStyle="#111827";c.font="bold 28px sans-serif";
+  c.fillText(String(q.a),(A.x+B.x)/2-8,A.y+42);
+  c.fillText(String(q.b),(A.x+D.x)/2-25,(A.y+D.y)/2-6);
+
+  c.beginPath();c.arc(A.x,A.y,56,-t,0);c.lineWidth=4;c.strokeStyle="#ef4444";c.stroke();
+  const mid=-t/2;
+  c.fillStyle="#dc2626";c.font="bold 24px sans-serif";
+  c.fillText(`${q.angle}°`,A.x+Math.cos(mid)*83-17,A.y+Math.sin(mid)*83);
+
+  c.fillStyle="#334155";c.font="bold 20px sans-serif";
+  c.fillText("S = a × b × sin θ",27,h-30);
+}
+function resetAnswer(){
+  state.answerDigits="";state.answerRadical=1;updateAnswerDisplay();
+}
+function updateAnswerDisplay(){
+  document.getElementById("sqrt2Button").classList.toggle("selected",state.answerRadical===2);
+  document.getElementById("sqrt3Button").classList.toggle("selected",state.answerRadical===3);
+
+  if(state.answerDigits==="" && state.answerRadical===1){
+    answerDisplay.textContent="답을 입력하세요";answerDisplay.classList.add("empty");return;
+  }
+  answerDisplay.classList.remove("empty");
+  const coeff=state.answerDigits===""?1:Number(state.answerDigits);
+  answerDisplay.textContent=state.answerRadical===1
+    ? String(coeff)
+    : coeff===1 ? `√${state.answerRadical}` : `${coeff}√${state.answerRadical}`;
+}
+function appendNumber(n){
+  if(state.screen!=="quiz"||state.quizWrongFreeze>0||state.quizFinished)return;
+  if(state.answerDigits.length>=3)return;
+  if(state.answerDigits===""&&n==="0")return;
+  state.answerDigits+=n;updateAnswerDisplay();
+}
+function setRadical(r){if(state.quizWrongFreeze<=0&&!state.quizFinished){state.answerRadical=r;updateAnswerDisplay()}}
+function backspace(){
+  if(state.quizWrongFreeze>0||state.quizFinished)return;
+  if(state.answerDigits.length)state.answerDigits=state.answerDigits.slice(0,-1);
+  else state.answerRadical=1;
+  updateAnswerDisplay();
+}
+function enteredExp(){
+  if(state.answerDigits===""&&state.answerRadical===1)return null;
+  const coeff=state.answerDigits===""?1:Number(state.answerDigits);
+  return Number.isFinite(coeff)&&coeff>0?exp(coeff,state.answerRadical):null;
+}
+function nextProblem(){
+  if(state.quizFinished)return;
+  state.currentProblem=createProblem();resetAnswer();drawProblem(state.currentProblem);
+  document.getElementById("quizMessage").textContent="";
+}
+function submitAnswer(){
+  if(state.quizFinished||state.quizWrongFreeze>0)return;
+  const e=enteredExp();
+  if(!e){
+    document.getElementById("quizMessage").innerHTML="<span style='color:#fbbf24'>답을 먼저 입력하세요.</span>";
+    return;
+  }
+  if(expKey(e)===expKey(state.currentProblem.answer)){
+    state.correct++;state.earned+=CORRECT_TIME_REWARD;updateQuizHud();nextProblem();
+  }else{
+    state.incorrect++;state.quizWrongFreeze=5;
+    document.getElementById("wrongPenaltyCount").textContent="5";
+    document.getElementById("wrongOverlay").style.display="flex";
+    updateQuizHud();
+  }
+}
+function updateQuizHud(){
+  document.getElementById("quizTime").textContent=`${Math.max(0,state.quizRemaining).toFixed(1)}초`;
+  document.getElementById("correctCount").textContent=`${state.correct}개`;
+  document.getElementById("incorrectCount").textContent=`${state.incorrect}개`;
+  document.getElementById("earnedTime").textContent=`${state.earned}초`;
+}
+
+/* -----------------------------
+   노래 리듬 + 거리별 3단계 난이도 차트
+
+   0~299m:
+   2박마다 입력
+
+   300m 1차:
+   1박 / 2박 입력을 섞어 더 빠르게
+
+   500m 2차:
+   원곡의 매 박자를 입력
+
+   1000m 3차:
+   원곡 매 박자 + 실제 강한 중간 악센트까지 입력
+
+   음악 재생속도 자체는 바꾸지 않는다.
+   입력 포인트가 촘촘해지면서 자연스럽게
+   더 빠르고 복잡한 맵이 된다.
+----------------------------- */
+
+function buildChart(){
+  return [...SONG_EVENTS];
+}
+
+/*
+   각 발판 사이의 시간 간격을 맵의 각도로 변환한다.
+
+   기본 2박 간격:
+   약 0.79초 -> 180° 회전 -> 직선
+
+   강한 악센트로 1박 간격이 생기면:
+   약 0.395초 -> 90° 회전 -> 직각 꺾임
+
+   따라서 공의 실제 회전속도는 계속 일정하고
+   노래 리듬이 맵 모양 자체가 된다.
+*/
+function getRotationSpeedForTile(tileIndex){
+
+  const stage=
+    SONG_STAGES[
+      tileIndex
+    ] ?? 3;
+
+
+  if(stage>=3){
+    return STAGE3_ROTATION_SPEED;
+  }
+
+
+  if(stage>=2){
+    return STAGE2_ROTATION_SPEED;
+  }
+
+
+  return BASE_ROTATION_SPEED;
+}
+
+
+function getTurnDirectionForTile(){
+  /*
+     공은 모든 구간에서 시계방향으로만 회전.
+  */
+  return 1;
+}
+
+
+function buildSongMap(){
+
+  const spacing=92;
+
+  const points=[
+    {
+      x:0,
+      y:0
+    }
+  ];
+
+
+  /*
+     음악 시간의 미세한 흔들림 때문에
+     87°, 94°, 173°처럼 애매한 발판이 생기지 않도록
+
+     맵은 SONG_ARCS의
+     45 / 90 / 180 / 270도 값을 직접 사용한다.
+  */
+
+  for(
+    let i=0;
+    i<SONG_EVENTS.length;
+    i++
+  ){
+
+    const current=
+      points[i];
+
+
+    const startAngle=
+      i===0
+      ? Math.PI
+      : norm(
+          Math.atan2(
+            points[i-1].y-
+            current.y,
+
+            points[i-1].x-
+            current.x
+          )
+        );
+
+
+    const arc=
+      (
+        SONG_ARCS[
+          i
+        ] ?? 180
+      )*
+      Math.PI/180;
+
+
+    const nextAngle=
+      norm(
+        startAngle+
+        arc
+      );
+
+
+    points.push({
+      x:
+        current.x+
+        Math.cos(
+          nextAngle
+        )*
+        spacing,
+
+      y:
+        current.y+
+        Math.sin(
+          nextAngle
+        )*
+        spacing
+    });
+  }
+
+
+  return points;
+}
+
+
+function hitWindow(){
+  return HIT_WINDOW_SECONDS;
+}
+
+/* -----------------------------
+   음악과 발판 상태
+----------------------------- */
+
+function segmentStartTime(){
+  if(state.tileIndex===0)return SONG_START_TIME;
+  return state.chart[state.tileIndex-1];
+}
+
+function targetTime(){
+  return state.chart[state.tileIndex] ?? music.duration;
+}
+
+function prepareGeometry(){
+
+  if(
+    state.tileIndex>=
+    state.map.length-1
+  ){
+    return;
+  }
+
+
+  const center=
+    state.map[
+      state.tileIndex
+    ];
+
+
+  if(
+    state.tileIndex===0
+  ){
+
+    state.attemptStartAngle=
+      Math.PI;
+
+  }else{
+
+    const prev=
+      state.map[
+        state.tileIndex-1
+      ];
+
+
+    state.attemptStartAngle=
+      norm(
+        Math.atan2(
+          prev.y-
+          center.y,
+
+          prev.x-
+          center.x
+        )
+      );
+  }
+
+
+  const next=
+    state.map[
+      state.tileIndex+1
+    ];
+
+
+  state.targetAngle=
+    norm(
+      Math.atan2(
+        next.y-
+        center.y,
+
+        next.x-
+        center.x
+      )
+    );
+
+
+  state.targetArc=
+    (
+      SONG_ARCS[
+        state.tileIndex
+      ] ?? 180
+    )*
+    Math.PI/180;
+
+
+  state.currentRotationSpeed=
+    getRotationSpeedForTile(
+      state.tileIndex
+    );
+
+
+  /*
+     항상 시계방향.
+  */
+
+  state.turnDirection=1;
+}
+
+/*
+   이전 버전은 각 발판마다
+   (현재시간-시작)/(목표-시작)으로 0~100%를 보간했기 때문에
+   맵 각도가 달라질 때 공이 빨라졌다 느려졌다 보일 수 있었다.
+
+   이제는 시간 × 고정 각속도만 사용한다.
+*/
+function orbitAngle(){
+
+  const start=
+    segmentStartTime();
+
+
+  const target=
+    targetTime();
+
+
+  const duration=
+    Math.max(
+      0.001,
+      target-start
+    );
+
+
+  const elapsed=
+    Math.max(
+      0,
+      music.currentTime-start
+    );
+
+
+  const progress=
+    Math.max(
+      0,
+      Math.min(
+        1.25,
+        elapsed/duration
+      )
+    );
+
+
+  /*
+     + 방향으로만 진행 =
+     화면 좌표계 기준 시계방향.
+  */
+
+  return norm(
+    state.attemptStartAngle+
+    state.targetArc*
+    progress
+  );
+}
+
+/* -----------------------------
+   리듬게임
+----------------------------- */
+
+const gameCanvas=document.getElementById("gameCanvas");
+const gctx=gameCanvas.getContext("2d");
+
+async function beginRhythm(){
+  state.gameRemaining=state.earned;
+  state.chart=buildChart();
+  state.map=buildSongMap();
+  state.tileIndex=0;state.distance=0;state.centerColor=0;
+  state.hits=0;state.misses=0;state.combo=0;state.maxCombo=0;
+  state.restartActive=false;state.restartCountdown=0;state.judgementTimer=0;state.rhythmStage=0;state.revealStartedAt=0;
+  state.collected=new Set();state.musicStarted=true;
+
+  prepareGeometry();
+  showScreen("game");
+  updateGameHud();drawGame();
+
+  if(state.gameRemaining<=0){finishGame();return}
+
+  music.pause();
+  music.currentTime=SONG_START_TIME;
+
+  try{
+    await music.play();
+  }catch(err){
+    showJudgement("음악 재생 버튼을 다시 눌러주세요");
+    state.musicStarted=false;
+    showScreen("transition");
+    document.getElementById("rhythmStartButton").disabled=false;
+    return;
+  }
+}
+
+function collectItem(){
+  const tile=state.tileIndex;
+  if(!TIME_ITEMS.includes(tile)||state.collected.has(tile))return;
+  state.collected.add(tile);state.gameRemaining+=5;
+  showJudgement("+5초!",1);
+}
+
+function getRhythmStage(){
+  if(state.distance>=1000)return 3;
+  if(state.distance>=500)return 2;
+  if(state.distance>=300)return 1;
+  return 0;
+}
+
+function getRhythmStageText(){
+  const stage=getRhythmStage();
+
+  if(stage===3){
+    return "3차 · 114 BPM";
+  }
+
+  if(stage===2){
+    return "2차 · 101 BPM";
+  }
+
+  if(stage===1){
+    return "1차 · CURVE";
+  }
+
+  return "기본 · 76 BPM";
+}
+
+function checkRhythmStageChange(){
+  const newStage=getRhythmStage();
+
+  if(newStage<=state.rhythmStage){
+    return;
+  }
+
+  state.rhythmStage=newStage;
+
+  if(newStage===1){
+    showJudgement(
+      "1차 · CURVE UP!",
+      1.2
+    );
+  }else if(newStage===2){
+    showJudgement(
+      "2차 · SPEED + WIDE ANGLE!",
+      1.2
+    );
+  }else{
+    showJudgement(
+      "3차 · BURST MODE!",
+      1.3
+    );
+  }
+}
+
+function advanceTile(){
+  state.tileIndex++;
+  state.distance=state.tileIndex*10;
+  state.centerColor=1-state.centerColor;
+
+  /*
+     한 칸 전진했으므로,
+     새로 공개되는 6번째 미래 발판 애니메이션 시작.
+  */
+  state.revealStartedAt=performance.now();
+
+  checkRhythmStageChange();
+  collectItem();
+
+  if(state.tileIndex>=state.chart.length){
+    finishGame();return;
+  }
+  prepareGeometry();updateGameHud();
+}
+function triggerMiss(){
+  if(state.restartActive||state.screen!=="game")return;
+  state.misses++;state.combo=0;
+  showJudgement("MISS!");
+  music.pause();
+  music.currentTime=segmentStartTime();
+
+  state.restartActive=true;
+  state.restartCountdown=3;
+  document.getElementById("restartOverlay").style.display="flex";
+  document.getElementById("restartNumber").textContent="3";
+  prepareGeometry();updateGameHud();drawGame();
+}
+function rhythmInput(){
+  if(state.screen!=="game"||state.restartActive||state.gameRemaining<=0||!state.musicStarted)return;
+  const err=Math.abs(music.currentTime-targetTime());
+  if(err<=hitWindow()){
+    state.hits++;state.combo++;state.maxCombo=Math.max(state.maxCombo,state.combo);
+    const ratio=err/hitWindow();
+    if(ratio<.28)showJudgement("PERFECT!");
+    else if(ratio<.62)showJudgement("GREAT!");
+    else showJudgement("GOOD!");
+    advanceTile();
+  }else{
+    triggerMiss();
+  }
+}
+function showJudgement(text,seconds=.45){
+  const el=document.getElementById("judgement");
+  el.textContent=text;
+  if(text==="MISS!")el.style.color="#f87171";
+  else if(text==="PERFECT!")el.style.color="#fde047";
+  else if(text==="+5초!"||text==="GO!")el.style.color="#4ade80";
+  else if(text.includes("1차"))el.style.color="#fb923c";
+  else if(text.includes("2차"))el.style.color="#f97316";
+  else if(text.includes("3차"))el.style.color="#c084fc";
+  else el.style.color="#7dd3fc";
+  state.judgementTimer=seconds;
+}
+function updateGameHud(){
+  document.getElementById("gameTime").textContent=`${Math.max(0,state.gameRemaining).toFixed(1)}초`;
+  document.getElementById("gameDistance").textContent=`${state.distance}m`;
+  document.getElementById("rhythmLevel").textContent=getRhythmStageText();
+  document.getElementById("gameCombo").textContent=state.combo;
+  document.getElementById("gameHit").textContent=state.hits;
+  document.getElementById("gameMiss").textContent=state.misses;
+  document.getElementById("syncStatus").textContent=`음악 ${music.currentTime.toFixed(1)}초 · 다음 입력 ${(targetTime()-music.currentTime).toFixed(2)}초`;
+}
+
+function drawGame(){
+  const c=gctx;
+  const w=gameCanvas.width;
+  const h=gameCanvas.height;
+
+  c.clearRect(0,0,w,h);
+
+  const bg=
+    c.createLinearGradient(
+      0,0,0,h
+    );
+
+  bg.addColorStop(
+    0,
+    "#07162b"
+  );
+
+  bg.addColorStop(
+    1,
+    "#101827"
+  );
+
+  c.fillStyle=bg;
+  c.fillRect(0,0,w,h);
+
+  if(!state.map.length)return;
+
+
+  const center=
+    state.map[state.tileIndex];
+
+
+  const toScreen=p=>({
+    x:
+      w*.37+
+      (
+        p.x-center.x
+      ),
+
+    y:
+      h*.53+
+      (
+        p.y-center.y
+      )
+  });
+
+
+  /* 배경 별 */
+
+  for(let i=0;i<75;i++){
+
+    const x=
+      (
+        i*173+43
+      )%w;
+
+    const y=
+      (
+        i*97+71
+      )%h;
+
+    c.beginPath();
+
+    c.arc(
+      x,
+      y,
+      i%4===0?2:1,
+      0,
+      TAU
+    );
+
+    c.fillStyle=
+      "rgba(255,255,255,.17)";
+
+    c.fill();
+  }
+
+
+  /*
+     겹치는 맵도 재미 요소로 보여주기 위해
+     이전보다 앞뒤를 조금 더 넓게 표시한다.
+  */
+
+  const start=
+    Math.max(
+      0,
+      state.tileIndex-4
+    );
+
+  const end=
+    Math.min(
+      state.map.length-1,
+      state.tileIndex+6
+    );
+
+
+  /*
+     플레이어가 한 칸 전진할 때마다
+     새롭게 보이게 되는 6번째 미래 발판을
+     약 0.32초 동안 페이드 + 팝업시킨다.
+  */
+
+  const revealIndex=
+    Math.min(
+      state.tileIndex+6,
+      state.map.length-1
+    );
+
+
+  const revealProgress=
+    state.revealStartedAt>0
+    ? clamp(
+        (
+          performance.now()-
+          state.revealStartedAt
+        )/320,
+        0,
+        1
+      )
+    : 1;
+
+
+  const revealEase=
+    1-
+    Math.pow(
+      1-revealProgress,
+      3
+    );
+
+
+  /* =================================================
+     겹친 발판 찾기
+
+     서로 인접하지 않은 두 발판의 위치가 거의 같으면
+     화면상 겹친 것으로 본다.
+
+     그중 현재 tileIndex에 더 가까운 발판을
+     '현행 발판'으로 두고 진하게 표시한다.
+
+     나머지 겹친 발판은 ghost=true로 두어
+     반투명하게 표시한다.
+  ================================================= */
+
+  const ghost=
+    new Array(
+      state.map.length
+    ).fill(false);
+
+
+  for(
+    let i=start;
+    i<=end;
+    i++
+  ){
+
+    for(
+      let j=i+1;
+      j<=end;
+      j++
+    ){
+
+      /*
+         바로 이어진 발판은 겹침 판정에서 제외
+      */
+
+      if(
+        Math.abs(i-j)<=2
+      ){
+        continue;
+      }
+
+
+      const a=
+        state.map[i];
+
+      const b=
+        state.map[j];
+
+
+      const distance=
+        Math.hypot(
+          a.x-b.x,
+          a.y-b.y
+        );
+
+
+      /*
+         발판 한 칸 크기보다 가까우면
+         사실상 겹쳐 보이는 위치
+      */
+
+      if(
+        distance<50
+      ){
+
+        const iPriority=
+          Math.abs(
+            i-state.tileIndex
+          );
+
+        const jPriority=
+          Math.abs(
+            j-state.tileIndex
+          );
+
+
+        /*
+           현재 진행 위치에 가까운 쪽을 살리고
+           먼 쪽을 투명 처리한다.
+        */
+
+        if(
+          iPriority<
+          jPriority
+        ){
+
+          ghost[j]=true;
+
+        }else if(
+          jPriority<
+          iPriority
+        ){
+
+          ghost[i]=true;
+
+        }else{
+
+          /*
+             거리가 같으면 앞으로 갈 길을 우선
+          */
+
+          if(j>i){
+            ghost[i]=true;
+          }else{
+            ghost[j]=true;
+          }
+        }
+      }
+    }
+  }
+
+
+  /*
+     현재 발판은 어떤 경우에도
+     절대 투명해지지 않는다.
+  */
+
+  ghost[state.tileIndex]=false;
+
+
+  /*
+     다음 목표 발판이 예전 발판과 겹치는 경우
+     주변의 오래된 발판을 훨씬 더 투명하게 만들어
+     다음 칸을 확실하게 보이게 한다.
+  */
+
+  const deepGhost=
+    new Array(
+      state.map.length
+    ).fill(false);
+
+
+  const nextIndex=
+    Math.min(
+      state.tileIndex+1,
+      state.map.length-1
+    );
+
+
+  ghost[nextIndex]=false;
+
+
+  const nextPoint=
+    state.map[
+      nextIndex
+    ];
+
+
+  for(
+    let i=start;
+    i<=end;
+    i++
+  ){
+
+    if(
+      i===state.tileIndex ||
+      i===nextIndex
+    ){
+      continue;
+    }
+
+
+    if(
+      Math.abs(
+        i-nextIndex
+      )<=2
+    ){
+      continue;
+    }
+
+
+    const d=
+      Math.hypot(
+        state.map[i].x-
+        nextPoint.x,
+
+        state.map[i].y-
+        nextPoint.y
+      );
+
+
+    if(
+      d<75
+    ){
+
+      ghost[i]=true;
+      deepGhost[i]=true;
+    }
+  }
+
+
+
+  /* =================================================
+     선분 그리기 함수
+  ================================================= */
+
+  function drawSegment(
+    i,
+    width,
+    color,
+    alpha
+  ){
+
+    if(
+      i<start ||
+      i>=end
+    ){
+      return;
+    }
+
+
+    const a=
+      toScreen(
+        state.map[i]
+      );
+
+    const b=
+      toScreen(
+        state.map[i+1]
+      );
+
+
+    c.save();
+
+    const segmentReveal=
+      (
+        i===end-1 &&
+        end===revealIndex &&
+        state.revealStartedAt>0
+      )
+      ? revealEase
+      : 1;
+
+
+    c.globalAlpha=
+      alpha*
+      segmentReveal;
+
+    c.beginPath();
+
+    c.moveTo(
+      a.x,
+      a.y
+    );
+
+    c.lineTo(
+      b.x,
+      b.y
+    );
+
+    c.lineWidth=
+      width;
+
+    c.lineJoin=
+      "round";
+
+    c.lineCap=
+      "round";
+
+    c.strokeStyle=
+      color;
+
+    c.stroke();
+
+    c.restore();
+  }
+
+
+  /* =================================================
+     1. 겹친 옛 길을 먼저 투명하게 그림
+  ================================================= */
+
+  for(
+    let i=start;
+    i<end;
+    i++
+  ){
+
+    if(
+      ghost[i] ||
+      ghost[i+1]
+    ){
+
+      drawSegment(
+        i,
+        45,
+        "#94a3b8",
+        .16
+      );
+
+      drawSegment(
+        i,
+        31,
+        "#dbe3ee",
+        .13
+      );
+    }
+  }
+
+
+  /* =================================================
+     2. 현행 길 / 겹치지 않은 길은 진하게
+  ================================================= */
+
+  for(
+    let i=start;
+    i<end;
+    i++
+  ){
+
+    if(
+      ghost[i] ||
+      ghost[i+1]
+    ){
+      continue;
+    }
+
+
+    drawSegment(
+      i,
+      45,
+      "#94a3b8",
+      1
+    );
+
+
+    drawSegment(
+      i,
+      31,
+      "#dbe3ee",
+      1
+    );
+  }
+
+
+  /* =================================================
+     발판 - 투명 발판부터 먼저 그린다.
+  ================================================= */
+
+  for(
+    let pass=0;
+    pass<2;
+    pass++
+  ){
+
+    for(
+      let i=start;
+      i<=end;
+      i++
+    ){
+
+      const isGhost=
+        ghost[i];
+
+
+      /*
+         pass 0 = 투명 발판
+         pass 1 = 진한 발판
+      */
+
+      if(
+        pass===0 &&
+        !isGhost
+      ){
+        continue;
+      }
+
+      if(
+        pass===1 &&
+        isGhost
+      ){
+        continue;
+      }
+
+
+      const p=
+        toScreen(
+          state.map[i]
+        );
+
+
+      c.save();
+
+
+      if(
+        deepGhost[i]
+      ){
+
+        c.globalAlpha=
+          .06;
+
+      }else if(
+        isGhost
+      ){
+
+        c.globalAlpha=
+          .20;
+
+      }else{
+
+        c.globalAlpha=
+          1;
+      }
+
+
+      if(
+        i<
+        state.tileIndex
+      ){
+
+        c.fillStyle=
+          "#64748b";
+
+      }else if(
+        i===
+        state.tileIndex
+      ){
+
+        c.fillStyle=
+          "#ffffff";
+
+      }else{
+
+        /*
+           미래 발판은 구간별로 은은하게 변화를 줌.
+        */
+
+        const phase=
+          Math.floor(
+            i/12
+          )%3;
+
+
+        c.fillStyle=
+
+          phase===0
+          ? "#dbeafe"
+
+          : phase===1
+          ? "#e0e7ff"
+
+          : "#d1fae5";
+      }
+
+
+      const isRevealTile=
+        (
+          i===revealIndex &&
+          state.revealStartedAt>0
+        );
+
+
+      const tileScale=
+        isRevealTile
+        ? .58+
+          .42*
+          revealEase
+        : 1;
+
+
+      if(isRevealTile){
+        c.globalAlpha*=
+          revealEase;
+      }
+
+
+      c.translate(
+        p.x,
+        p.y
+      );
+
+
+      c.scale(
+        tileScale,
+        tileScale
+      );
+
+
+      c.fillRect(
+        -21,
+        -21,
+        42,
+        42
+      );
+
+
+      c.strokeStyle=
+        "rgba(15,23,42,.32)";
+
+      c.lineWidth=
+        2;
+
+
+      c.strokeRect(
+        -21,
+        -21,
+        42,
+        42
+      );
+
+
+      c.restore();
+    }
+  }
+
+
+
+  /* =================================================
+     난이도 단계 경계 표시
+  ================================================= */
+
+  const stageMilestones=[
+    {tile:30,label:"300m · 1차"},
+    {tile:50,label:"500m · 2차"},
+    {tile:100,label:"1000m · 3차"}
+  ];
+
+  for(const milestone of stageMilestones){
+
+    if(
+      milestone.tile<start ||
+      milestone.tile>end ||
+      milestone.tile>=state.map.length
+    ){
+      continue;
+    }
+
+    const p=
+      toScreen(
+        state.map[milestone.tile]
+      );
+
+    c.save();
+
+    c.textAlign="center";
+    c.textBaseline="bottom";
+    c.font="bold 15px sans-serif";
+    c.fillStyle=
+      milestone.tile===100
+      ? "#c084fc"
+      : "#fb923c";
+
+    c.fillText(
+      milestone.label,
+      p.x,
+      p.y-38
+    );
+
+    c.restore();
+  }
+
+
+  /* =================================================
+     +5초 아이템
+
+     겹친 발판에 있는 아이템도
+     같이 투명하게 보여준다.
+  ================================================= */
+
+  for(
+    let i=start;
+    i<=end;
+    i++
+  ){
+
+    if(
+      !TIME_ITEMS.includes(i) ||
+      state.collected.has(i)
+    ){
+      continue;
+    }
+
+
+    const p=
+      toScreen(
+        state.map[i]
+      );
+
+
+    const iy=
+      p.y-55;
+
+
+    c.save();
+
+
+    c.globalAlpha=
+      deepGhost[i]
+      ? .06
+      : ghost[i]
+      ? .22
+      : 1;
+
+
+    if(
+      i===revealIndex &&
+      state.revealStartedAt>0
+    ){
+      c.globalAlpha*=
+        revealEase;
+    }
+
+
+    c.beginPath();
+
+    c.arc(
+      p.x,
+      iy,
+      31,
+      0,
+      TAU
+    );
+
+    c.fillStyle=
+      "rgba(34,197,94,.18)";
+
+    c.fill();
+
+
+    c.beginPath();
+
+    c.arc(
+      p.x,
+      iy,
+      24,
+      0,
+      TAU
+    );
+
+    c.fillStyle=
+      "#22c55e";
+
+    c.fill();
+
+
+    c.lineWidth=
+      3;
+
+    c.strokeStyle=
+      "#ffffff";
+
+    c.stroke();
+
+
+    c.fillStyle=
+      "#ffffff";
+
+    c.textAlign=
+      "center";
+
+    c.textBaseline=
+      "middle";
+
+    c.font=
+      "bold 17px sans-serif";
+
+
+    c.fillText(
+      "+5",
+      p.x,
+      iy-3
+    );
+
+
+    c.font=
+      "bold 10px sans-serif";
+
+
+    c.fillText(
+      "초",
+      p.x,
+      iy+12
+    );
+
+
+    c.restore();
+  }
+
+
+  c.textAlign=
+    "start";
+
+  c.textBaseline=
+    "alphabetic";
+
+
+  /* =================================================
+     현재→다음 길과 다음 발판은 항상 맨 위에 다시 표시.
+
+     1280m처럼 맵이 겹치는 곳에서도
+     목표 발판이 절대 묻히지 않는다.
+  ================================================= */
+
+  if(
+    state.tileIndex+1<
+    state.map.length
+  ){
+
+    const currentTop=
+      toScreen(
+        state.map[
+          state.tileIndex
+        ]
+      );
+
+
+    const n=
+      toScreen(
+        state.map[
+          state.tileIndex+1
+        ]
+      );
+
+
+    c.beginPath();
+
+    c.moveTo(
+      currentTop.x,
+      currentTop.y
+    );
+
+    c.lineTo(
+      n.x,
+      n.y
+    );
+
+
+    c.strokeStyle=
+      "rgba(255,255,255,.95)";
+
+    c.lineWidth=
+      11;
+
+    c.lineCap=
+      "round";
+
+    c.stroke();
+
+
+    c.fillStyle=
+      "#dbeafe";
+
+    c.fillRect(
+      n.x-21,
+      n.y-21,
+      42,
+      42
+    );
+
+
+    c.strokeStyle=
+      "#ffffff";
+
+    c.lineWidth=
+      3;
+
+    c.strokeRect(
+      n.x-21,
+      n.y-21,
+      42,
+      42
+    );
+
+
+    c.beginPath();
+
+    c.arc(
+      n.x,
+      n.y,
+      31,
+      0,
+      TAU
+    );
+
+
+    c.strokeStyle=
+      "rgba(250,204,21,.98)";
+
+    c.lineWidth=
+      5;
+
+    c.stroke();
+  }
+
+
+  /* =================================================
+     현재 두 공
+
+     공과 현재 발판은 항상 가장 위에 진하게 표시
+  ================================================= */
+
+  const cs=
+    toScreen(
+      center
+    );
+
+
+  const radius=
+    92;
+
+
+  const a=
+    orbitAngle();
+
+
+  const mx=
+    cs.x+
+    Math.cos(a)*
+    radius;
+
+
+  const my=
+    cs.y+
+    Math.sin(a)*
+    radius;
+
+
+  c.beginPath();
+
+  c.moveTo(
+    cs.x,
+    cs.y
+  );
+
+  c.lineTo(
+    mx,
+    my
+  );
+
+
+  c.strokeStyle=
+    "rgba(255,255,255,.55)";
+
+  c.lineWidth=
+    5;
+
+  c.stroke();
+
+
+  const centerColor=
+    state.centerColor===0
+    ? "#2563eb"
+    : "#ef3b2d";
+
+
+  const movingColor=
+    state.centerColor===0
+    ? "#ef3b2d"
+    : "#2563eb";
+
+
+  /*
+     공은 맵/발판/목표링을 전부 그린 뒤 마지막에 렌더링한다.
+     따라서 어느 발판과 겹쳐도 항상 화면 맨 앞에 보인다.
+  */
+
+  c.save();
+
+  c.shadowColor=
+    "rgba(0,0,0,.95)";
+
+  c.shadowBlur=
+    12;
+
+
+  c.beginPath();
+
+  c.arc(
+    cs.x,
+    cs.y,
+    20,
+    0,
+    TAU
+  );
+
+  c.fillStyle=
+    centerColor;
+
+  c.fill();
+
+
+  c.strokeStyle=
+    "#ffffff";
+
+  c.lineWidth=
+    4;
+
+  c.stroke();
+
+
+  c.restore();
+
+
+  c.save();
+
+  c.shadowColor=
+    "rgba(0,0,0,.95)";
+
+  c.shadowBlur=
+    14;
+
+
+  c.beginPath();
+
+  c.arc(
+    mx,
+    my,
+    20,
+    0,
+    TAU
+  );
+
+  c.fillStyle=
+    movingColor;
+
+  c.fill();
+
+
+  c.strokeStyle=
+    "#ffffff";
+
+  c.lineWidth=
+    4;
+
+  c.stroke();
+
+
+  /*
+     움직이는 공 바깥쪽에 얇은 강조 링을 추가해서
+     발판이 많이 겹친 구간에서도 위치를 쉽게 확인할 수 있다.
+  */
+
+  c.beginPath();
+
+  c.arc(
+    mx,
+    my,
+    25,
+    0,
+    TAU
+  );
+
+  c.strokeStyle=
+    "rgba(255,255,255,.45)";
+
+  c.lineWidth=
+    2;
+
+  c.stroke();
+
+
+  c.restore();
+
+
+}
+
+/* -----------------------------
+   시작 / 종료
+----------------------------- */
+
+function startQuiz(){
+
+  const input=
+    document.getElementById(
+      "nicknameInput"
+    );
+
+
+  const message=
+    document.getElementById(
+      "nicknameMessage"
+    );
+
+
+  const nickname=
+    cleanNickname(
+      input?.value
+    );
+
+
+  if(!nickname){
+
+    if(message){
+      message.textContent=
+        "닉네임을 입력해야 게임을 시작할 수 있습니다.";
+    }
+
+    input?.focus();
+    return;
+  }
+
+
+  if(nickname.length>12){
+
+    if(message){
+      message.textContent=
+        "닉네임은 12자 이하로 입력하세요.";
+    }
+
+    return;
+  }
+
+
+  currentNickname=
+    nickname;
+
+
+  if(input){
+    input.value=
+      nickname;
+  }
+
+
+  if(message){
+    message.textContent="";
+  }
+
+
+  try{
+    localStorage.setItem(
+      "ascentNickname",
+      nickname
+    );
+  }catch(error){
+    /* 저장 실패는 게임 진행에 영향 없음 */
+  }
+
+
+  ensureMusicLoaded();
+  music.pause();
+  if(Number.isFinite(music.duration)){
+    music.currentTime=0;
+  }
+  state.quizRemaining=QUIZ_TIME;state.correct=0;state.incorrect=0;state.earned=BASE_GAME_TIME;
+  state.quizWrongFreeze=0;state.quizFinished=false;resetAnswer();
+  document.getElementById("wrongOverlay").style.display="none";
+  showScreen("quiz");updateQuizHud();nextProblem();
+}
+function finishQuiz(){
+  if(state.quizFinished)return;
+  state.quizFinished=true;
+  document.getElementById("transitionTime").textContent=`${state.earned}초`;
+  showScreen("transition");
+  updateSongReady();
+}
+function updateSongReady(){
+  const btn=document.getElementById("rhythmStartButton");
+  const txt=document.getElementById("songReadyText");
+  if(music.readyState>=2){
+    btn.disabled=false;
+    txt.textContent="노래 준비 완료 · 획득한 시간만큼 리듬게임을 플레이합니다.";
+  }else{
+    btn.disabled=true;
+    txt.textContent="노래를 불러오는 중...";
+  }
+}
+function finishGame(){
+  if(state.screen==="result")return;
+  music.pause();state.musicStarted=false;
+  document.getElementById("restartOverlay").style.display="none";
+  document.getElementById("resultCorrect").textContent=`${state.correct}개`;
+  document.getElementById("resultTime").textContent=`${state.earned}초`;
+  document.getElementById("resultHit").textContent=state.hits;
+  document.getElementById("resultMiss").textContent=state.misses;
+  document.getElementById("resultDistance").textContent=`${state.distance}m`;
+
+  const resultNickname=
+    document.getElementById(
+      "resultNickname"
+    );
+
+  if(resultNickname){
+    resultNickname.textContent=
+      currentNickname ||
+      "PLAYER";
+  }
+
+
+  const rankStatus=
+    document.getElementById(
+      "resultRankStatus"
+    );
+
+  if(rankStatus){
+    rankStatus.textContent=
+      "랭킹 저장 중...";
+  }
+
+
+  showScreen("result");
+
+  /*
+     결과 화면을 먼저 보여준 뒤
+     Firestore 저장을 비동기로 진행한다.
+  */
+  saveRanking();
+}
+
+/* -----------------------------
+   이벤트
+----------------------------- */
+
+document.querySelectorAll(".numberKey").forEach(b=>b.addEventListener("click",()=>appendNumber(b.dataset.n)));
+document.getElementById("sqrt2Button").addEventListener("click",()=>setRadical(2));
+document.getElementById("sqrt3Button").addEventListener("click",()=>setRadical(3));
+document.getElementById("integerButton").addEventListener("click",()=>{state.answerRadical=1;updateAnswerDisplay()});
+document.getElementById("backspaceButton").addEventListener("click",backspace);
+document.getElementById("clearButton").addEventListener("click",resetAnswer);
+document.getElementById("resetAnswerButton").addEventListener("click",resetAnswer);
+document.getElementById("submitAnswerButton").addEventListener("click",submitAnswer);
+
+document.getElementById("startButton").addEventListener("click",startQuiz);
+
+const nicknameInput=
+  document.getElementById(
+    "nicknameInput"
+  );
+
+if(nicknameInput){
+
+  try{
+    const saved=
+      localStorage.getItem(
+        "ascentNickname"
+      );
+
+    if(saved){
+      nicknameInput.value=
+        cleanNickname(
+          saved
+        );
+    }
+  }catch(error){
+    /* localStorage 실패 무시 */
+  }
+
+
+  nicknameInput.addEventListener(
+    "input",
+    ()=>{
+
+      const message=
+        document.getElementById(
+          "nicknameMessage"
+        );
+
+      if(message){
+        message.textContent="";
+      }
+    }
+  );
+
+
+  nicknameInput.addEventListener(
+    "keydown",
+    event=>{
+
+      if(event.key==="Enter"){
+        event.preventDefault();
+        startQuiz();
+      }
+    }
+  );
+}
+
+loadLeaderboard();
+
+document.getElementById("rhythmStartButton").addEventListener("click",beginRhythm);
+document.getElementById("restartButton").addEventListener("click",()=>{
+  showScreen("start");
+  loadLeaderboard();
+});
+
+music.addEventListener("canplay",updateSongReady);
+music.addEventListener("loadedmetadata",updateSongReady);
+music.addEventListener("ended",finishGame);
+music.addEventListener("error",()=>{
+  document.getElementById("songReadyText").textContent="Dropbox 음원을 불러오지 못했습니다. 인터넷 연결 또는 Dropbox 공유 설정을 확인하세요.";
+});
+
+document.addEventListener("keydown",e=>{
+  if(state.screen==="game"&&e.code==="Space"){
+    e.preventDefault();rhythmInput();return;
+  }
+  if(state.screen==="quiz"&&state.quizWrongFreeze<=0){
+    if(/^[0-9]$/.test(e.key))appendNumber(e.key);
+    else if(e.key==="Backspace")backspace();
+    else if(e.key==="Enter")submitAnswer();
+  }
+});
+document.getElementById("gameArea").addEventListener("pointerdown",e=>{
+  if(state.screen==="game"){e.preventDefault();rhythmInput()}
+});
+
+/* -----------------------------
+   메인 루프
+----------------------------- */
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.04,(now-last)/1000);last=now;
+
+  if(state.screen==="quiz"){
+    state.quizRemaining-=dt;
+
+    if(state.quizWrongFreeze>0){
+      state.quizWrongFreeze-=dt;
+      document.getElementById("wrongPenaltyCount").textContent=
+        Math.max(1,Math.ceil(state.quizWrongFreeze));
+
+      if(state.quizWrongFreeze<=0){
+        state.quizWrongFreeze=0;
+        document.getElementById("wrongOverlay").style.display="none";
+        nextProblem();
+      }
+    }
+
+    if(state.quizRemaining<=0){
+      state.quizRemaining=0;updateQuizHud();finishQuiz();
+    }else updateQuizHud();
+  }
+
+  if(state.screen==="game"){
+    /* 제한시간은 정상 플레이와 MISS 카운트다운 모두 계속 감소 */
+    state.gameRemaining-=dt;
+
+    if(state.gameRemaining<=0){
+      state.gameRemaining=0;updateGameHud();drawGame();finishGame();
+    }else if(state.restartActive){
+      state.restartCountdown-=dt;
+      const n=document.getElementById("restartNumber");
+
+      if(state.restartCountdown>2)n.textContent="3";
+      else if(state.restartCountdown>1)n.textContent="2";
+      else if(state.restartCountdown>0)n.textContent="1";
+      else{
+        state.restartActive=false;state.restartCountdown=0;
+        document.getElementById("restartOverlay").style.display="none";
+        music.currentTime=segmentStartTime();
+        prepareGeometry();
+        music.play().then(()=>showJudgement("GO!")).catch(()=>showJudgement("재생 실패"));
+      }
+      updateGameHud();drawGame();
+    }else{
+      /* 목표 타이밍을 놓치면 자동 MISS */
+      if(state.musicStarted && music.currentTime>targetTime()+hitWindow()){
+        triggerMiss();
+      }
+
+      if(state.judgementTimer>0){
+        state.judgementTimer-=dt;
+        if(state.judgementTimer<=0)document.getElementById("judgement").textContent="";
+      }
+
+      updateGameHud();drawGame();
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
