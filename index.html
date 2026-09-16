@@ -1,0 +1,1376 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>지옥의 러닝머신</title>
+  <style>
+    :root{
+      --bg:#0b0d12;--panel:#171a22;--panel2:#212632;--text:#f5f7fb;--muted:#aab2c0;
+      --line:#343b49;--accent:#ff4d4f;--accent2:#ffad2f;--good:#31d19a;--blue:#5da9ff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;color:var(--text);
+      font-family:"Pretendard","Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:radial-gradient(circle at top,#202430 0,#0b0d12 56%);
+    }
+    button,input{font:inherit} button{cursor:pointer}
+    .app{max-width:1040px;margin:0 auto;padding:22px}
+    .title{margin:4px 0 6px;font-size:clamp(36px,7vw,66px);line-height:1;font-weight:1000;letter-spacing:-2px}
+    .subtitle{margin:0 0 20px;color:var(--muted);font-weight:750}
+    .hidden{display:none!important}
+    .panel{background:rgba(23,26,34,.97);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 14px 40px rgba(0,0,0,.2)}
+    .startGrid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+    .stat{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px 8px;text-align:center;min-width:0}
+    .stat strong{display:block;font-size:clamp(18px,2.4vw,24px);line-height:1.05;white-space:nowrap}
+    .stat span{display:block;margin-top:5px;color:var(--muted);font-size:12px}
+    .rules{line-height:1.72;color:#dce2eb}
+    .rules b{color:#fff}
+    .speedRule{margin-top:12px;padding:12px;border:1px solid #54432c;border-radius:13px;background:#241e17;line-height:1.65;color:#ffe2b3}
+    .fieldLabel{display:block;margin:14px 0 6px;font-weight:900}
+    .nicknameRow{display:grid;grid-template-columns:1fr auto;gap:8px}
+    .nickname{
+      min-width:0;height:50px;border:1px solid var(--line);border-radius:12px;background:#10131a;color:white;
+      padding:0 14px;font-size:17px;outline:none
+    }
+    .nickname:focus{border-color:#ff696d;box-shadow:0 0 0 3px rgba(255,77,79,.15)}
+    .mainBtn,.smallBtn{
+      border:0;border-radius:12px;color:white;font-weight:950;background:linear-gradient(135deg,#ff3944,#ff7b32)
+    }
+    .mainBtn{width:100%;min-height:52px;margin-top:12px;font-size:18px}
+    .smallBtn{min-width:112px;padding:0 16px}
+    .startMessage{min-height:24px;margin-top:7px;text-align:center;color:#ff9b9e;font-weight:850}
+    .rankTitle{margin:0 0 10px;font-size:20px}
+    .rankTable{width:100%;border-collapse:collapse;table-layout:fixed}
+    .rankTable th,.rankTable td{padding:9px 7px;border-bottom:1px solid #303642;text-align:center}
+    .rankTable th{font-size:12px;color:var(--muted)}
+    .rankTable td:nth-child(2){text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:850}
+    .rankEmpty{padding:28px 8px!important;color:var(--muted);text-align:center!important}
+    .rankNote{margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+    .quizTop{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:9px}
+    .quizTop h2{margin:0;font-size:19px}
+    .timerBar,.inputBar{height:12px;border-radius:999px;background:#303644;overflow:hidden}
+    .timerFill,.inputFill{width:100%;height:100%;transform-origin:left center;background:linear-gradient(90deg,#ffba3a,#ff4d4f)}
+    .diagramWrap{margin-top:12px;background:#fafbfd;border:1px solid #d6dce5;border-radius:16px;overflow:hidden}
+    .diagramWrap svg{display:block;width:100%;height:auto}
+    .targetNote{margin-top:10px;padding:10px 12px;border-radius:12px;background:#2a1a1d;border:1px solid #633039;color:#ffd7db;font-weight:900;text-align:center}
+    .answerRow{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}
+    .answerRow input{min-width:0;height:50px;border:1px solid var(--line);border-radius:12px;color:white;background:#10131a;padding:0 14px;font-size:18px;outline:none}
+    .answerRow input:focus{border-color:#ff696d;box-shadow:0 0 0 3px rgba(255,77,79,.15)}
+    .answerRow button{min-width:105px;border:0;border-radius:12px;color:white;background:#ff4d4f;font-weight:950}
+    .quizWork{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(250px,.65fr);gap:16px;align-items:start}
+    .problemSide,.keypadSide{min-width:0}
+    .keypadSide{background:#10131a;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .answerDisplay{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin-bottom:10px}
+    .answerLabel{font-weight:950;color:#ffd58d}
+    .answerDisplay input{width:100%;min-width:0;height:54px;border:1px solid var(--line);border-radius:12px;background:#080a0f;color:#fff;padding:0 14px;font-size:26px;font-weight:950;text-align:center;outline:none;caret-color:transparent;cursor:default;user-select:none;-webkit-user-select:none}
+    .answerDisplay input:focus{border-color:#ff696d;box-shadow:0 0 0 3px rgba(255,77,79,.15)}
+    .submitOnly{margin-top:10px}
+    .submitOnly button{width:100%;height:54px;border:0;border-radius:12px;background:#ff4d4f;color:#fff;font-weight:950;font-size:18px}
+    .numberPad{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(62px,1fr));
+      gap:9px;
+      margin-top:0;
+    }
+    .numBtn{
+      min-height:62px;
+      border:1px solid #4b5362;
+      background:#282e39;
+      color:white;
+      border-radius:13px;
+      font-size:24px;
+      font-weight:950;
+      box-shadow:0 4px 0 #11151d;
+      touch-action:manipulation;
+      -webkit-tap-highlight-color:transparent;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .numBtn:active,.numBtn.pressed{
+      transform:translateY(2px) scale(.98);
+      box-shadow:0 2px 0 #11151d;
+      background:#3b4554;
+    }
+    .feedback{min-height:28px;margin-top:8px;text-align:center;font-weight:950}
+    .quizAccel{margin-top:8px;color:#ffd58d;text-align:center;font-size:13px;font-weight:800}
+    .ready{white-space:pre-line;text-align:center;font-size:clamp(32px,7vw,58px);font-weight:1000;padding:34px 12px}
+    .belt{position:relative;height:270px;border-radius:20px;overflow:hidden;border:1px solid #42495a;background:radial-gradient(circle at 50% -30%,rgba(255,78,50,.24),transparent 48%),linear-gradient(#131722,#202632)}
+    .flames{position:absolute;inset:auto 0 78px 0;height:105px;opacity:.82;pointer-events:none;background:
+      radial-gradient(ellipse at 7% 100%,#ff812b 0 12%,transparent 13%),
+      radial-gradient(ellipse at 18% 100%,#ff4d30 0 18%,transparent 19%),
+      radial-gradient(ellipse at 31% 100%,#ff9c2b 0 13%,transparent 14%),
+      radial-gradient(ellipse at 49% 100%,#ff4d30 0 20%,transparent 21%),
+      radial-gradient(ellipse at 67% 100%,#ff972c 0 15%,transparent 16%),
+      radial-gradient(ellipse at 82% 100%,#ff4d30 0 18%,transparent 19%),
+      radial-gradient(ellipse at 95% 100%,#ff9c2b 0 12%,transparent 13%);filter:blur(1px)}
+    .track{position:absolute;left:3%;right:3%;bottom:57px;height:72px;border-radius:12px;background:linear-gradient(#2e3441,#11151c 48%,#2e3441 50%,#11151c);border:5px solid #454d5c;overflow:hidden}
+    .track::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,#586171 0 22px,#262c36 22px 44px);animation:trackMove var(--track-speed,.95s) linear infinite;animation-play-state:var(--track-play,running)}
+    .edge{position:absolute;left:3%;bottom:48px;width:6px;height:100px;background:#ff3636;box-shadow:0 0 18px #ff3636}
+    .runner{position:absolute;bottom:108px;left:50%;width:72px;height:72px;transform:translateX(-50%);z-index:6;transition:left .12s ease-out;filter:drop-shadow(0 5px 2px rgba(0,0,0,.35));pointer-events:none}
+    .runnerSvg{display:block;width:100%;height:100%;transform:none}
+    .timeItem{
+      position:absolute;
+      bottom:132px;
+      z-index:5;
+      min-width:58px;
+      height:42px;
+      padding:0 9px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:12px;
+      font-size:18px;
+      font-weight:1000;
+      color:#141414;
+      background:linear-gradient(180deg,#fff39a,#ffbd32);
+      border:3px solid #fff7c5;
+      box-shadow:0 5px 12px rgba(0,0,0,.34);
+      transform:translateX(-50%);
+      pointer-events:none;
+    }
+    .timeItem.plus5{background:linear-gradient(180deg,#b8fff0,#35d7ac);border-color:#dcfff7}
+    .timeItem.collected{animation:itemPop .25s ease forwards}
+    @keyframes itemPop{to{transform:translateX(-50%) scale(1.55);opacity:0}}
+    .scale{position:absolute;left:3%;right:3%;bottom:14px;display:flex;justify-content:space-between;color:#b9c1cf;font-size:11px}
+    .penaltyOverlay{position:absolute;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;text-align:center;background:rgba(8,10,15,.62);backdrop-filter:blur(2px)}
+    .penaltyOverlay strong{display:block;font-size:clamp(30px,6vw,56px);color:#ffb333}
+    .penaltyOverlay span{display:block;margin-top:7px;font-size:16px;font-weight:850}
+    .runGrid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:14px}
+    .promptPanel{text-align:center}
+    .promptLabel{color:var(--muted);font-weight:800}
+    .arrow{font-size:100px;font-weight:1000;line-height:1.05;min-height:112px;display:flex;align-items:center;justify-content:center}
+    .keys{display:grid;grid-template-columns:repeat(3,minmax(72px,96px));grid-template-rows:repeat(2,minmax(68px,82px));gap:10px;justify-content:center;align-content:center;height:100%;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+    .key{border:2px solid #596273;background:#282e39;color:white;border-radius:16px;font-size:36px;font-weight:1000;min-height:68px;min-width:72px;box-shadow:0 5px 0 #11151d;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    .key:hover{background:#343c49}
+    .key:active,.key.pressed{transform:translateY(3px) scale(.97);box-shadow:0 2px 0 #11151d;background:#414c5c}
+    .key:active{transform:scale(.93);background:#3a4353}
+    .key:disabled{opacity:.4;cursor:not-allowed}
+    .up{grid-column:2}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}
+    .judges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12px;font-weight:900}
+    .judge{padding:6px 9px;border-radius:999px;border:1px solid #414958;background:#242a34}
+    .judge.best{color:#ffca57}.judge.good{color:#66d9ae}.judge.normal{color:#cbd1dc}
+    .runFeedback{margin-top:7px;min-height:26px;text-align:center;font-weight:1000}
+    .gameOver{text-align:center}
+    .gameOver .record{font-size:clamp(44px,10vw,82px);font-weight:1000;color:#ffb02e;line-height:1}
+    .gameOver p{color:var(--muted)}
+    .bestBox{margin-top:12px;padding:12px;border-radius:13px;background:#201d17;border:1px solid #5f4a21;font-weight:900}
+    @keyframes trackMove{from{background-position:0 0}to{background-position:-88px 0}}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+    @keyframes pop{50%{transform:scale(1.025)}}
+    .shake{animation:shake .28s}.pop{animation:pop .22s}
+    @media(max-width:760px){
+      .app{padding:14px}.startGrid,.runGrid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}
+      .answerRow{grid-template-columns:1fr}.answerRow button{height:48px}.belt{height:240px}
+      .quizWork{grid-template-columns:1fr}
+      .keypadSide{padding:12px}
+      .keys{grid-template-columns:repeat(3,minmax(70px,92px));grid-template-rows:repeat(2,76px);gap:10px}
+      .key{font-size:38px;min-height:72px}
+      .runner{bottom:105px;width:68px;height:68px}
+      .numberPad{grid-template-columns:repeat(3,1fr);gap:7px}
+      .numBtn{min-height:58px;font-size:26px}
+    }
+    @media(max-width:390px){
+      .keys{grid-template-columns:repeat(3,72px);grid-template-rows:repeat(2,68px);gap:8px}
+      .key{min-width:68px;min-height:64px;font-size:34px}
+    }
+    @media(max-width:420px){.nicknameRow{grid-template-columns:1fr}.smallBtn{height:48px}.title{letter-spacing:-1px}}
+    @media(prefers-reduced-motion:reduce){.track::before{animation:none}.runner{transition:none}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <h1 class="title">지옥의 러닝머신</h1>
+  <section id="startScreen" class="panel">
+    <label class="fieldLabel" for="nicknameInput" style="margin-top:0">닉네임</label>
+    <div class="nicknameRow">
+      <input id="nicknameInput" class="nickname" maxlength="12" autocomplete="off" placeholder="2~12자 입력">
+      <button id="startBtn" class="smallBtn" type="button">지옥 입장</button>
+    </div>
+    <div id="startMessage" class="startMessage" aria-live="polite"></div>
+
+    <div style="margin-top:18px">
+      <h2 class="rankTitle">🏆 최고 기록 TOP 10</h2>
+      <table class="rankTable">
+        <thead><tr><th style="width:48px">순위</th><th>닉네임</th><th style="width:92px">거리</th></tr></thead>
+        <tbody id="rankingBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="quizScreen" class="hidden">
+    <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><strong id="totalTime">50.0</strong><span>전체 남은 시간</span></div>
+      <div class="stat"><strong id="correctCount">0</strong><span>정답 수</span></div>
+      <div class="stat"><strong id="quizSpeed">x1.0</strong><span>출발 속도</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="quizTop">
+        <h2>다음 삼각형의 내접원에서 <span style="color:#ff676c">x의 값</span>을 구하시오.</h2>
+        <strong id="questionNo">1번</strong>
+      </div>
+
+      <div class="quizWork">
+        <div class="problemSide">
+          <div id="diagram" class="diagramWrap"></div>
+          <div id="targetNote" class="targetNote">빨간색으로 표시된 길이가 x입니다.</div>
+        </div>
+
+        <div class="keypadSide">
+          <div class="answerDisplay">
+            <span class="answerLabel">정답</span>
+            <input id="answerInput" type="text" inputmode="none" autocomplete="off" readonly tabindex="-1" placeholder="x의 값">
+          </div>
+
+          <div class="numberPad" aria-label="숫자 입력 버튼">
+            <button type="button" class="numBtn" data-num="1">1</button>
+            <button type="button" class="numBtn" data-num="2">2</button>
+            <button type="button" class="numBtn" data-num="3">3</button>
+            <button type="button" class="numBtn" data-num="4">4</button>
+            <button type="button" class="numBtn" data-num="5">5</button>
+            <button type="button" class="numBtn" data-num="6">6</button>
+            <button type="button" class="numBtn" data-num="7">7</button>
+            <button type="button" class="numBtn" data-num="8">8</button>
+            <button type="button" class="numBtn" data-num="9">9</button>
+            <button type="button" class="numBtn numClear" data-action="clear">C</button>
+            <button type="button" class="numBtn" data-num="0">0</button>
+            <button type="button" class="numBtn numBack" data-action="back">⌫</button>
+          </div>
+
+          <form id="answerForm" class="submitOnly">
+            <button type="submit">정답 제출</button>
+          </form>
+          <div id="quizFeedback" class="feedback" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="quizAccel">오답 시 3초 제한</div>
+    </div>
+  </section>
+
+  <section id="readyScreen" class="hidden panel">
+    <div id="readyText" class="ready">3</div>
+  </section>
+
+  <section id="runScreen" class="hidden" tabindex="0">
+    <div class="stats" style="grid-template-columns:repeat(5,1fr)">
+      <div class="stat"><strong id="runTimeLeft">0.0초</strong><span>남은 게임시간</span></div>
+      <div class="stat"><strong id="runDistance">0.0m</strong><span>기록 거리</span></div>
+      <div class="stat"><strong id="runnerPos">0.0m</strong><span>벨트 위 위치</span></div>
+      <div class="stat"><strong id="speedText">x1.0</strong><span>현재 속도</span></div>
+      <div class="stat"><strong id="streakText">0</strong><span>연속 성공</span></div>
+    </div>
+
+    <div id="belt" class="belt">
+      <div class="flames"></div>
+      <div class="edge"></div>
+      <div class="track"></div>
+      <div id="timeItemLayer"></div>
+      <div id="runner" class="runner" aria-label="오른쪽으로 달리는 선수">
+        <svg class="runnerSvg" viewBox="0 0 90 90" role="img" aria-hidden="true">
+          <circle cx="59" cy="16" r="9" fill="#ffd0a6"/>
+          <path d="M51 27 L62 31 L56 50 L43 45 Z" fill="#ff5a4f"/>
+          <path d="M48 31 L34 42" stroke="#ffd0a6" stroke-width="7" stroke-linecap="round"/>
+          <path d="M60 33 L74 41" stroke="#ffd0a6" stroke-width="7" stroke-linecap="round"/>
+          <path d="M49 48 L64 62 L76 69" fill="none" stroke="#26384f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M48 47 L36 61 L24 72" fill="none" stroke="#26384f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M73 69 L84 69" stroke="#f1f3f7" stroke-width="7" stroke-linecap="round"/>
+          <path d="M24 72 L14 78" stroke="#f1f3f7" stroke-width="7" stroke-linecap="round"/>
+          <path d="M65 11 Q73 13 77 19" fill="none" stroke="#34261f" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="scale"><span>추락</span><span>15m</span><span>30m</span><span>45m</span></div>
+      <div id="penaltyOverlay" class="penaltyOverlay hidden">
+        <div><strong id="penaltyTitle">정지!</strong><span id="penaltyText">2.0초</span></div>
+      </div>
+    </div>
+
+    <div class="runGrid">
+      <div class="panel promptPanel">
+        <div class="promptLabel">같은 방향을 누르세요</div>
+        <div id="promptArrow" class="arrow">↑</div>
+        <div class="inputBar"><div id="inputTimerFill" class="inputFill"></div></div>
+        <div id="runFeedback" class="runFeedback">READY</div>
+        <div class="judges">
+          <span class="judge best">BEST +0.2</span>
+          <span class="judge good">GOOD +0.1</span>
+          <span class="judge normal">NORMAL 유지</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="text-align:center;color:var(--muted);font-weight:850;margin-bottom:10px">
+          PC: 키보드 또는 마우스 · 태블릿: 화면 버튼
+        </div>
+        <div class="keys" aria-label="화면 방향키">
+          <button class="key up" data-dir="up" type="button">↑</button>
+          <button class="key left" data-dir="left" type="button">←</button>
+          <button class="key down" data-dir="down" type="button">↓</button>
+          <button class="key right" data-dir="right" type="button">→</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="gameOverScreen" class="hidden panel gameOver">
+    <div style="font-size:56px">🔥🏃‍♂️💨</div>
+    <h2>GAME OVER</h2>
+    <div id="finalDistance" class="record">0.0m</div>
+    <p><strong id="finalNickname"></strong>의 기록</p>
+    <div class="stats">
+      <div class="stat"><strong id="finalCorrect">0</strong><span>문제 정답</span></div>
+      <div class="stat"><strong id="finalRunTime">0초</strong><span>배정 게임시간</span></div>
+      <div class="stat"><strong id="finalBestStreak">0</strong><span>최고 연속</span></div>
+      <div class="stat"><strong id="finalSpeed">x1.0</strong><span>최종 속도</span></div>
+    </div>
+    <div id="rankResult" class="bestBox">기록을 저장했습니다.</div>
+    <button id="restartBtn" class="mainBtn" type="button">같은 닉네임으로 다시 도전</button>
+    <button id="homeBtn" class="mainBtn" style="background:#303744;margin-top:8px" type="button">TOP10 화면으로</button>
+  </section>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAnalytics, isSupported as analyticsIsSupported } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
+import {
+  getFirestore, collection, doc, getDocs, query, where, orderBy, limit,
+  serverTimestamp, runTransaction
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBJH4uX1bj0PaEUtMDuYSyJ2GDt6f7Gz6o",
+  authDomain: "game-bb5b0.firebaseapp.com",
+  projectId: "game-bb5b0",
+  storageBucket: "game-bb5b0.firebasestorage.app",
+  messagingSenderId: "47848761419",
+  appId: "1:47848761419:web:62f872cc443d49411a85ce",
+  measurementId: "G-SJBS9DDEPL"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+try {
+  if (await analyticsIsSupported()) getAnalytics(firebaseApp);
+} catch (e) {
+  // Analytics is optional; the game still works without it.
+}
+
+(() => {
+  const $ = s => document.querySelector(s);
+  const screens = ['#startScreen','#quizScreen','#readyScreen','#runScreen','#gameOverScreen'];
+  const show = id => screens.forEach(s => $(s).classList.toggle('hidden', s !== id));
+
+  const RANK_COLLECTION = 'hellTreadmillRankings';
+  const PLAYER_ID_KEY = 'hellTreadmillPlayerId_v1';
+  const FALLBACK_RANK_KEY = 'hellTreadmillTop10_fallback_v1';
+
+  let playerId = '';
+  try {
+    playerId = localStorage.getItem(PLAYER_ID_KEY) || '';
+    if(!playerId){
+      playerId = (crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'player_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      localStorage.setItem(PLAYER_ID_KEY,playerId);
+    }
+  } catch(e) {
+    playerId = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  }
+
+  let nickname = '';
+  let firebaseOnline = true;
+  let quizRAF = 0, runRAF = 0, penaltyRAF = 0, promptTimer = 0, readyTimer = 0, quizPenaltyTimer = 0;
+  let quizStart = 0, questionStart = 0, currentAnswer = 0, questionNo = 0;
+  let correct = 0, questionResolved = false, quizStartSpeed = 1.0;
+  let runStart = 0, lastFrame = 0, position = 0, distance = 0, streak = 0, bestStreak = 0;
+  let runTimeLimit = 0, runTimeRemaining = 0;
+  let speed = 1.0, currentDir = 'up', promptStart = 0, promptWindow = 1350, inputLocked = false;
+  let runPromptCount = 0;
+  let penaltyMode = false, gameEnded = false;
+  const MAX_POS = 45;
+
+  let activeTimeItem = null;
+  let nextItemAt = 0;
+
+  const dirs = ['up','down','left','right'];
+  const arrows = {up:'↑',down:'↓',left:'←',right:'→'};
+  const triples = [
+    // 화면에 표시되는 수가 크지 않도록 작은 피타고라스 조합만 사용
+    {a:3,b:4,c:5},   // 현 8
+    {a:4,b:3,c:5},   // 현 6
+    {a:8,b:6,c:10}   // 현 12
+  ];
+  const rnd = a => a[Math.floor(Math.random()*a.length)];
+  const round1 = n => Math.round(n*10)/10;
+  const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
+  const fmt = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
+
+  function nicknameKey(name){
+    return encodeURIComponent(name.trim().toLocaleLowerCase('ko-KR'));
+  }
+
+  function loadFallbackRankings(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(FALLBACK_RANK_KEY) || '[]');
+      if(!Array.isArray(raw)) return [];
+      const unique = new Map();
+      raw.forEach(r=>{
+        if(!r || typeof r.name !== 'string' || !Number.isFinite(Number(r.distance))) return;
+        const k = r.name.trim().toLocaleLowerCase('ko-KR');
+        if(!k) return;
+        const item = {name:r.name.trim(),distance:Number(r.distance)};
+        if(!unique.has(k) || unique.get(k).distance < item.distance) unique.set(k,item);
+      });
+      return [...unique.values()].sort((a,b)=>b.distance-a.distance).slice(0,10);
+    }catch(e){ return []; }
+  }
+
+  function saveFallbackRanking(name,record){
+    const list = loadFallbackRankings();
+    const key = name.trim().toLocaleLowerCase('ko-KR');
+    const before = list.find(r=>r.name.trim().toLocaleLowerCase('ko-KR')===key);
+    if(before) before.distance = Math.max(before.distance,record);
+    else list.push({name,distance:record});
+    list.sort((a,b)=>b.distance-a.distance);
+    try{ localStorage.setItem(FALLBACK_RANK_KEY,JSON.stringify(list.slice(0,10))); }catch(e){}
+    return list.slice(0,10);
+  }
+
+  async function loadRankings(){
+    try{
+      const q = query(
+        collection(db,RANK_COLLECTION),
+        where('distance','>',0),
+        orderBy('distance','desc'),
+        limit(10)
+      );
+      const snap = await getDocs(q);
+      firebaseOnline = true;
+      return snap.docs.map(d=>{
+        const v = d.data();
+        return {name:String(v.name || ''),distance:Number(v.distance || 0)};
+      }).filter(r=>r.name && Number.isFinite(r.distance));
+    }catch(e){
+      console.warn('Firebase ranking load failed:',e);
+      firebaseOnline = false;
+      return loadFallbackRankings();
+    }
+  }
+
+  async function claimNickname(name){
+    const ref = doc(db,RANK_COLLECTION,nicknameKey(name));
+    try{
+      await runTransaction(db,async tx=>{
+        const snap = await tx.get(ref);
+        if(snap.exists()){
+          const data = snap.data();
+          if(data.ownerId && data.ownerId !== playerId){
+            const err = new Error('DUPLICATE_NICKNAME');
+            err.code = 'DUPLICATE_NICKNAME';
+            throw err;
+          }
+          tx.update(ref,{
+            name,
+            ownerId: playerId,
+            updatedAt: serverTimestamp()
+          });
+        }else{
+          tx.set(ref,{
+            name,
+            distance: 0,
+            ownerId: playerId,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        }
+      });
+      firebaseOnline = true;
+      return {ok:true};
+    }catch(e){
+      if(e && (e.code === 'DUPLICATE_NICKNAME' || e.message === 'DUPLICATE_NICKNAME')){
+        return {ok:false,duplicate:true};
+      }
+      console.warn('Nickname claim failed:',e);
+      firebaseOnline = false;
+
+      // 네트워크/권한 문제 시에는 게임 자체는 가능하게 하되 이 기기 임시 랭킹으로 전환
+      const fallback = loadFallbackRankings();
+      const duplicateLocal = fallback.some(r =>
+        r.name.trim().toLocaleLowerCase('ko-KR') === name.trim().toLocaleLowerCase('ko-KR')
+      );
+      return {ok:true,fallback:true,duplicateLocal};
+    }
+  }
+
+  async function saveRanking(name,record){
+    let status = 'new';
+
+    if(firebaseOnline){
+      const ref = doc(db,RANK_COLLECTION,nicknameKey(name));
+      try{
+        await runTransaction(db,async tx=>{
+          const snap = await tx.get(ref);
+          if(!snap.exists()){
+            tx.set(ref,{
+              name,
+              distance: record,
+              ownerId: playerId,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+            status = 'new';
+            return;
+          }
+
+          const data = snap.data();
+
+          // 같은 닉네임은 같은 랭킹 문서를 공유한다.
+          // 기기가 달라도 플레이 가능하며, 기존 최고 기록보다 높을 때만 갱신한다.
+          const oldDistance = Number(data.distance || 0);
+          if(record > oldDistance){
+            tx.update(ref,{
+              name,
+              distance: record,
+              updatedAt: serverTimestamp()
+            });
+            status = oldDistance > 0 ? 'updated' : 'new';
+          }else{
+            status = 'notHigher';
+          }
+        });
+      }catch(e){
+        console.warn('Firebase ranking save failed:',e);
+        firebaseOnline = false;
+        saveFallbackRanking(name,record);
+        status = 'fallback';
+      }
+    }else{
+      saveFallbackRanking(name,record);
+      status = 'fallback';
+    }
+
+    const list = await loadRankings();
+    const key = name.trim().toLocaleLowerCase('ko-KR');
+    const rank = list.findIndex(r=>r.name.trim().toLocaleLowerCase('ko-KR')===key);
+
+    await renderRankings();
+    return {status,rank:rank>=0 ? rank+1 : null};
+  }
+
+  async function renderRankings(){
+    const body = $('#rankingBody');
+    body.innerHTML = '<tr><td colspan="3" class="rankEmpty">TOP10 불러오는 중...</td></tr>';
+
+    const list = await loadRankings();
+    if(!list.length){
+      body.innerHTML = '<tr><td colspan="3" class="rankEmpty">아직 기록이 없습니다.<br>첫 번째 기록의 주인공이 되어 보세요!</td></tr>';
+      return;
+    }
+
+    body.innerHTML = list.map((r,i)=>{
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);
+      return `<tr><td>${medal}</td><td>${escapeHtml(r.name)}</td><td><b>${r.distance.toFixed(1)}m</b></td></tr>`;
+    }).join('');
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  }
+
+  function stopAll(){
+    cancelAnimationFrame(quizRAF);
+    cancelAnimationFrame(runRAF);
+    cancelAnimationFrame(penaltyRAF);
+    clearTimeout(promptTimer);
+    clearInterval(readyTimer);
+    clearTimeout(quizPenaltyTimer);
+  }
+
+  function setKeysDisabled(disabled){
+    document.querySelectorAll('.key').forEach(b => b.disabled = disabled);
+  }
+
+  function svgBase(inner){
+    return `<svg viewBox="0 0 640 370" role="img" aria-label="삼각형의 내접원과 접선 길이 문제">
+      <rect width="640" height="370" fill="#fbfcfe"/>${inner}</svg>`;
+  }
+
+  function chordGeom(cx,cy,R,dist,angleDeg,side){
+    const th = angleDeg*Math.PI/180;
+    const ux = Math.cos(th), uy = Math.sin(th);
+    const nx = -uy, ny = ux;
+    const s = side || 1;
+    const fx = cx + nx*dist*s, fy = cy + ny*dist*s;
+    const half = Math.sqrt(Math.max(0,R*R-dist*dist));
+    return {
+      fx,fy,
+      x1:fx-ux*half, y1:fy-uy*half,
+      x2:fx+ux*half, y2:fy+uy*half,
+      ux,uy,nx,ny
+    };
+  }
+
+  function rightAnglePath(g,size){
+    const s = size || 13;
+    const ax = g.fx + g.ux*s;
+    const ay = g.fy + g.uy*s;
+    const bx = ax - g.nx*s;
+    const by = ay - g.ny*s;
+    const cx = g.fx - g.nx*s;
+    const cy = g.fy - g.ny*s;
+    return `M ${g.fx.toFixed(1)} ${g.fy.toFixed(1)} L ${ax.toFixed(1)} ${ay.toFixed(1)} L ${bx.toFixed(1)} ${by.toFixed(1)} L ${cx.toFixed(1)} ${cy.toFixed(1)}`;
+  }
+
+  function pointDist(P,Q){
+    return Math.hypot(P.x-Q.x,P.y-Q.y);
+  }
+
+  function projectPointToLine(P,A,B){
+    const vx = B.x-A.x, vy = B.y-A.y;
+    const t = ((P.x-A.x)*vx + (P.y-A.y)*vy) / (vx*vx + vy*vy);
+    return {x:A.x+t*vx, y:A.y+t*vy};
+  }
+
+  function triangleIncenter(A,B,C){
+    const a = pointDist(B,C);
+    const b = pointDist(C,A);
+    const c = pointDist(A,B);
+    const sum = a+b+c;
+    return {
+      x:(a*A.x + b*B.x + c*C.x)/sum,
+      y:(a*A.y + b*B.y + c*C.y)/sum
+    };
+  }
+
+  function mid(P,Q){
+    return {x:(P.x+Q.x)/2, y:(P.y+Q.y)/2};
+  }
+
+  function makeQuestion(){
+    questionNo++;
+    questionResolved = false;
+    questionStart = performance.now();
+    $('#questionNo').textContent = questionNo + '번';
+    $('#quizFeedback').textContent = '';
+    $('#answerInput').value = '';
+    $('#answerInput').disabled = false;
+    $('#answerForm button').disabled = false;
+
+    // 예시 그림처럼 A, B, C가 원 밖의 점이고 삼각형의 세 변이 내접원에 접한다.
+    // D, E, F는 각각 AB, BC, CA 위의 접점.
+    const A = {x:320,y:38};
+    const B = {x:128,y:318};
+    const C = {x:512,y:318};
+    const O = triangleIncenter(A,B,C);
+
+    const D = projectPointToLine(O,A,B);
+    const E = projectPointToLine(O,B,C);
+    const F = projectPointToLine(O,A,C);
+    const r = pointDist(O,E);
+
+    // 작은 수만 사용:
+    // BD=BE=p, CE=CF=q, AD=AF=x
+    // 따라서 BC=p+q, AC=q+x
+    const p = rnd([2,3,4,5]);
+    const q = rnd([1,2,3,4]);
+    let x = rnd([2,3,4,5,6,7]);
+
+    // 같은 숫자가 너무 많이 겹쳐 보이는 경우를 조금 줄인다.
+    if(x === p && x < 7) x += 1;
+
+    const BC = p + q;
+    const AC = q + x;
+    currentAnswer = x;
+
+    const ADmid = mid(A,D);
+    const BDmid = mid(B,D);
+    const ACmid = mid(A,C);
+    const BCmid = mid(B,C);
+
+    $('#targetNote').textContent = '성질: 원 밖의 한 점에서 그 원에 그은 두 접선의 길이는 같습니다.';
+
+    $('#diagram').innerHTML = svgBase(`
+      <polygon points="${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}"
+               fill="none" stroke="#20242c" stroke-width="4.5" stroke-linejoin="round"/>
+
+      <circle cx="${O.x.toFixed(1)}" cy="${O.y.toFixed(1)}" r="${r.toFixed(1)}"
+              fill="#ffffff" stroke="#5d6b55" stroke-width="3"/>
+
+      <text x="${A.x-8}" y="${A.y-10}" font-size="20" font-weight="900" fill="#1c2430">A</text>
+      <text x="${B.x-24}" y="${B.y+11}" font-size="20" font-weight="900" fill="#1c2430">B</text>
+      <text x="${C.x+7}" y="${C.y+11}" font-size="20" font-weight="900" fill="#1c2430">C</text>
+
+      <circle cx="${D.x.toFixed(1)}" cy="${D.y.toFixed(1)}" r="4.5" fill="#596273"/>
+      <circle cx="${E.x.toFixed(1)}" cy="${E.y.toFixed(1)}" r="4.5" fill="#596273"/>
+      <circle cx="${F.x.toFixed(1)}" cy="${F.y.toFixed(1)}" r="4.5" fill="#596273"/>
+
+      <text x="${(D.x-27).toFixed(1)}" y="${(D.y+4).toFixed(1)}" font-size="18" font-weight="800" fill="#3d4653">D</text>
+      <text x="${(E.x-5).toFixed(1)}" y="${(E.y+25).toFixed(1)}" font-size="18" font-weight="800" fill="#3d4653">E</text>
+      <text x="${(F.x+13).toFixed(1)}" y="${(F.y+4).toFixed(1)}" font-size="18" font-weight="800" fill="#3d4653">F</text>
+
+      <circle cx="${O.x.toFixed(1)}" cy="${O.y.toFixed(1)}" r="4" fill="#1c2430"/>
+      <text x="${(O.x-8).toFixed(1)}" y="${(O.y+29).toFixed(1)}" font-size="19" font-weight="800" fill="#1c2430">O</text>
+
+      <!-- 구해야 하는 AD=x를 빨간색으로 강조 -->
+      <line x1="${A.x}" y1="${A.y}" x2="${D.x.toFixed(1)}" y2="${D.y.toFixed(1)}"
+            stroke="#e33b46" stroke-width="7" stroke-linecap="round"/>
+      <text x="${(ADmid.x-53).toFixed(1)}" y="${(ADmid.y-8).toFixed(1)}"
+            font-size="22" font-weight="950" fill="#d51f2d">x cm</text>
+
+      <!-- BD -->
+      <text x="${(BDmid.x-55).toFixed(1)}" y="${(BDmid.y+6).toFixed(1)}"
+            font-size="19" font-weight="850" fill="#20242c">${p} cm</text>
+
+      <!-- AC 전체 길이 -->
+      <text x="${(ACmid.x+24).toFixed(1)}" y="${(ACmid.y-5).toFixed(1)}"
+            font-size="19" font-weight="850" fill="#20242c">${AC} cm</text>
+
+      <!-- BC 전체 길이 -->
+      <text x="${(BCmid.x-24).toFixed(1)}" y="${(BCmid.y+34).toFixed(1)}"
+            font-size="19" font-weight="850" fill="#20242c">${BC} cm</text>
+
+      <text x="77" y="356" font-size="17" fill="#555f6f">
+        BD=${p} cm, BC=${BC} cm, AC=${AC} cm일 때 AD=x의 값을 구하세요.
+      </text>
+    `);
+}
+
+  function quizAcceleration(solveSeconds){
+    if(solveSeconds <= 1.5) return 0.4;
+    if(solveSeconds <= 2.5) return 0.3;
+    if(solveSeconds <= 4.0) return 0.2;
+    return 0.1;
+  }
+
+  function beginQuiz(){
+    stopAll();
+    gameEnded = false;
+    correct = 0;
+    questionNo = 0;
+    quizStartSpeed = 1.0;
+    $('#correctCount').textContent = '0';
+    $('#quizSpeed').textContent = 'x1.0';
+    show('#quizScreen');
+    quizStart = performance.now();
+    makeQuestion();
+
+    const frame = now => {
+      const totalLeft = Math.max(0,50-(now-quizStart)/1000);
+      $('#totalTime').textContent = totalLeft.toFixed(1);
+
+      if(totalLeft <= 0){ finishQuiz(); return; }
+
+      quizRAF = requestAnimationFrame(frame);
+    };
+    quizRAF = requestAnimationFrame(frame);
+  }
+
+  // 답안은 화면 숫자패드로만 입력
+  $('#answerInput').addEventListener('keydown',e=>e.preventDefault());
+  $('#answerInput').addEventListener('beforeinput',e=>e.preventDefault());
+  $('#answerInput').addEventListener('paste',e=>e.preventDefault());
+  $('#answerInput').addEventListener('pointerdown',e=>e.preventDefault());
+
+  document.querySelectorAll('.numBtn').forEach(btn=>{
+    const pressNum = e => {
+      e.preventDefault();
+      if($('#quizScreen').classList.contains('hidden') || questionResolved) return;
+      const input = $('#answerInput');
+      if(input.disabled) return;
+
+      const action = btn.dataset.action;
+      if(action === 'clear'){
+        input.value = '';
+      }else if(action === 'back'){
+        input.value = String(input.value || '').slice(0,-1);
+      }else{
+        const current = String(input.value || '');
+        if(current.length >= 2) return; // 문제 숫자를 작게 제한했으므로 최대 2자리
+        input.value = current + btn.dataset.num;
+      }
+
+      btn.classList.add('pressed');
+    };
+
+    const releaseNum = () => btn.classList.remove('pressed');
+
+    btn.addEventListener('pointerdown', pressNum);
+    btn.addEventListener('pointerup', releaseNum);
+    btn.addEventListener('pointercancel', releaseNum);
+    btn.addEventListener('pointerleave', releaseNum);
+  });
+
+  $('#answerForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    if(questionResolved) return;
+    const v = Number($('#answerInput').value);
+    if(!Number.isFinite(v)) return;
+
+    const solveSeconds = Math.max(0,(performance.now()-questionStart)/1000);
+    questionResolved = true;
+
+    if(Math.abs(v-currentAnswer) < .001){
+      correct++;
+      const accel = quizAcceleration(solveSeconds);
+      quizStartSpeed = clamp(round1(quizStartSpeed + accel),1,4.0);
+      $('#correctCount').textContent = correct;
+      $('#quizSpeed').textContent = 'x' + quizStartSpeed.toFixed(1);
+      $('#quizFeedback').textContent = `정답! +3m · 속도 +${accel.toFixed(1)}`;
+      $('#quizScreen .panel').classList.remove('pop'); void $('#quizScreen .panel').offsetWidth; $('#quizScreen .panel').classList.add('pop');
+
+      setTimeout(()=>{ if((performance.now()-quizStart)/1000 < 50) makeQuestion(); },150);
+    }else{
+      $('#quizScreen .panel').classList.remove('shake'); void $('#quizScreen .panel').offsetWidth; $('#quizScreen .panel').classList.add('shake');
+
+      const input = $('#answerInput');
+      const submit = $('#answerForm button');
+      input.disabled = true;
+      submit.disabled = true;
+      const lockUntil = performance.now() + 3000;
+
+      const penaltyTick = () => {
+        const remain = Math.max(0,(lockUntil-performance.now())/1000);
+        if(remain > 0 && (performance.now()-quizStart)/1000 < 50){
+          $('#quizFeedback').textContent = `오답! 정답 ${fmt(currentAnswer)} · ${remain.toFixed(1)}초 제한`;
+          quizPenaltyTimer = setTimeout(penaltyTick,100);
+        }else{
+          input.disabled = false;
+          submit.disabled = false;
+          if((performance.now()-quizStart)/1000 < 50) makeQuestion();
+        }
+      };
+      penaltyTick();
+    }
+  });
+
+  function finishQuiz(){
+    cancelAnimationFrame(quizRAF);
+    clearTimeout(quizPenaltyTimer);
+    $('#answerInput').blur();
+    show('#readyScreen');
+    let n = 3;
+    $('#readyText').textContent = `${correct}문제 정답\n${correct*3}m에서 출발\n러닝시간 ${correct*4}초\n출발 속도 x${quizStartSpeed.toFixed(1)}\n\n${n}`;
+    readyTimer = setInterval(()=>{
+      n--;
+      if(n>0) $('#readyText').textContent = n;
+      else{ clearInterval(readyTimer); startRun(); }
+    },800);
+  }
+
+  function setRunner(){
+    const pct = 3 + (clamp(position,0,MAX_POS)/MAX_POS)*94;
+    $('#runner').style.left = pct + '%';
+    $('#runnerPos').textContent = Math.max(0,position).toFixed(1) + 'm';
+  }
+
+  function updateSpeedUI(){
+    speed = clamp(round1(speed),1,8);
+    $('#speedText').textContent = 'x' + speed.toFixed(1);
+    $('#belt').style.setProperty('--track-speed',Math.max(.16,.98/speed)+'s');
+  }
+
+  function scheduleNextTimeItem(){
+    // 대략 6~10초 사이에 다음 아이템 기회를 만든다.
+    nextItemAt = performance.now() + 6000 + Math.random()*4000;
+  }
+
+  function clearTimeItem(){
+    if(activeTimeItem && activeTimeItem.el){
+      activeTimeItem.el.remove();
+    }
+    activeTimeItem = null;
+  }
+
+  function spawnTimeItem(){
+    if(activeTimeItem || gameEnded || penaltyMode) return;
+
+    // +3초가 더 자주, +5초는 조금 희귀
+    const bonus = Math.random() < 0.72 ? 3 : 5;
+    const el = document.createElement('div');
+    el.className = 'timeItem' + (bonus === 5 ? ' plus5' : '');
+    el.textContent = '+' + bonus + '초';
+
+    $('#timeItemLayer').appendChild(el);
+
+    activeTimeItem = {
+      el,
+      bonus,
+      x: 96
+    };
+    el.style.left = activeTimeItem.x + '%';
+  }
+
+  function updateTimeItem(dt){
+    if(!activeTimeItem){
+      if(performance.now() >= nextItemAt){
+        // "가끔" 등장: 기회가 와도 약 70% 확률로만 실제 생성
+        if(Math.random() < .70) spawnTimeItem();
+        scheduleNextTimeItem();
+      }
+      return;
+    }
+
+    // 벨트 속도에 맞춰 오른쪽에서 왼쪽으로 이동
+    activeTimeItem.x -= dt * (8 + speed*3.2);
+    activeTimeItem.el.style.left = activeTimeItem.x + '%';
+
+    const runnerPct = 3 + (clamp(position,0,MAX_POS)/MAX_POS)*94;
+
+    if(Math.abs(activeTimeItem.x - runnerPct) <= 4.0){
+      const bonus = activeTimeItem.bonus;
+      runTimeRemaining += bonus;
+      activeTimeItem.el.classList.add('collected');
+      $('#runFeedback').textContent = `시간 아이템! +${bonus}초`;
+      const old = activeTimeItem;
+      activeTimeItem = null;
+      setTimeout(()=>old.el.remove(),260);
+      scheduleNextTimeItem();
+      return;
+    }
+
+    // 놓친 아이템은 왼쪽으로 사라짐
+    if(activeTimeItem.x < 0){
+      clearTimeItem();
+      scheduleNextTimeItem();
+    }
+  }
+
+  let audioCtx = null;
+
+  function ensureAudio(){
+    try{
+      if(!audioCtx){
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if(!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+      if(audioCtx.state === 'suspended'){
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function playCorrectSound(judgement){
+    const ctx = ensureAudio();
+    if(!ctx) return;
+
+    const now = ctx.currentTime;
+    const base =
+      judgement === 'BEST' ? 760 :
+      judgement === 'GOOD' ? 680 : 610;
+
+    // 짧은 두 음으로 "뿅뿅" 느낌
+    [0, 0.09].forEach((delay,i)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(base + i*180, now + delay);
+      osc.frequency.exponentialRampToValueAtTime(
+        (base + i*180) * 1.18,
+        now + delay + 0.06
+      );
+
+      gain.gain.setValueAtTime(0.0001, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + delay + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.085);
+    });
+  }
+
+  function getPromptWindow(){
+    // 시작 직후에는 적응할 시간을 준다.
+    // 첫 입력은 1.8초, 두 번째는 1.55초로 고정하고
+    // 세 번째부터 현재 속도에 따라 제한시간이 빠르게 줄어든다.
+    if(runPromptCount === 0) return 1800;
+    if(runPromptCount === 1) return 1550;
+    return Math.max(300,1500-(speed-1)*190);
+  }
+
+  function newPrompt(){
+    if(inputLocked || penaltyMode || gameEnded) return;
+    currentDir = rnd(dirs);
+    $('#promptArrow').textContent = arrows[currentDir];
+    promptStart = performance.now();
+    promptWindow = getPromptWindow();
+    runPromptCount++;
+    clearTimeout(promptTimer);
+    promptTimer = setTimeout(()=>resolveInput(null),promptWindow);
+  }
+
+  function resolveInput(dir){
+    if(inputLocked || penaltyMode || gameEnded) return;
+    inputLocked = true;
+    clearTimeout(promptTimer);
+
+    const ratio = Math.min(1,(performance.now()-promptStart)/promptWindow);
+
+    if(dir !== currentDir){
+      streak = 0;
+      $('#streakText').textContent = '0';
+      $('#runFeedback').textContent = dir === null ? 'MISS! 페널티 시작' : 'WRONG! 페널티 시작';
+      beginWrongPenalty();
+      return;
+    }
+
+    let judgement = 'NORMAL';
+    let addSpeed = 0;
+    if(ratio <= .40){ judgement='BEST'; addSpeed=.2; position=Math.min(MAX_POS,position+.9); }
+    else if(ratio <= .72){ judgement='GOOD'; addSpeed=.1; position=Math.min(MAX_POS,position+.25); }
+    else{ judgement='NORMAL'; addSpeed=0; position-=.65; }
+
+    speed = clamp(round1(speed + addSpeed),1,8);
+    updateSpeedUI();
+
+    // 정확한 방향을 눌렀을 때 짧은 '뿅뿅' 효과음
+    playCorrectSound(judgement);
+
+    streak++;
+    bestStreak = Math.max(bestStreak,streak);
+    $('#streakText').textContent = streak;
+    $('#runFeedback').textContent =
+      judgement==='BEST' ? `BEST! 속도 +0.2 → x${speed.toFixed(1)}` :
+      judgement==='GOOD' ? `GOOD! 속도 +0.1 → x${speed.toFixed(1)}` :
+      `NORMAL! 속도 유지 x${speed.toFixed(1)}`;
+
+    setRunner();
+    if(position <= 0){ gameOver(); return; }
+
+    setTimeout(()=>{
+      inputLocked = false;
+      newPrompt();
+    },105);
+  }
+
+  function beginWrongPenalty(){
+    penaltyMode = true;
+    inputLocked = true;
+    setKeysDisabled(true);
+    clearTimeout(promptTimer);
+    cancelAnimationFrame(runRAF);
+
+    // 틀린 순간 속도를 절반으로 줄인다. 위치는 전혀 뒤로 밀지 않는다.
+    speed = Math.max(1,round1(speed*.5));
+    updateSpeedUI();
+
+    const overlay = $('#penaltyOverlay');
+    overlay.classList.remove('hidden');
+    $('#belt').style.setProperty('--track-play','paused');
+
+    const penaltyStart = performance.now();
+    let penaltyLast = penaltyStart;
+
+    const penaltyFrame = now => {
+      if(gameEnded) return;
+      const elapsed = (now-penaltyStart)/1000;
+      const dt = Math.min(.05,(now-penaltyLast)/1000);
+      penaltyLast = now;
+
+      // 정지 페널티 중에도 배정된 러닝시간은 계속 줄어든다.
+      runTimeRemaining = Math.max(0, runTimeRemaining - dt);
+      $('#runTimeLeft').textContent = runTimeRemaining.toFixed(1) + '초';
+
+      if(runTimeRemaining <= 0){
+        $('#runFeedback').textContent = '시간 종료!';
+        gameOver();
+        return;
+      }
+
+      if(elapsed < 2){
+        $('#penaltyTitle').textContent = '정지!';
+        $('#penaltyText').textContent = `${Math.max(0,2-elapsed).toFixed(1)}초 · 속도 x${speed.toFixed(1)}`;
+        $('#runFeedback').textContent = `오답! 위치는 유지 · 속도 x${speed.toFixed(1)}`;
+        penaltyRAF = requestAnimationFrame(penaltyFrame);
+        return;
+      }
+
+      $('#penaltyTitle').textContent = '재시작!';
+      $('#penaltyText').textContent = `속도 x${speed.toFixed(1)}`;
+      $('#runFeedback').textContent = `절반 속도 x${speed.toFixed(1)}로 재시작`;
+
+      setTimeout(()=>{
+        if(gameEnded) return;
+        overlay.classList.add('hidden');
+        penaltyMode = false;
+        inputLocked = false;
+        setKeysDisabled(false);
+        $('#belt').style.setProperty('--track-play','running');
+        lastFrame = performance.now();
+        startRunLoop();
+        newPrompt();
+
+        // 키보드 입력이 확실히 들어오도록 버튼/입력창 포커스를 제거
+        if(document.activeElement && typeof document.activeElement.blur === 'function'){
+          document.activeElement.blur();
+        }
+        $('#runScreen').focus({preventScroll:true});
+      },300);
+    };
+
+    penaltyRAF = requestAnimationFrame(penaltyFrame);
+  }
+
+  function startRunLoop(){
+    cancelAnimationFrame(runRAF);
+    lastFrame = performance.now();
+
+    const frame = now => {
+      if(gameEnded || penaltyMode) return;
+      const dt = Math.min(.05,(now-lastFrame)/1000);
+
+      // 총 기록 거리는 현재 속도에 비례해 계속 증가
+      distance += dt*(2.15*speed);
+
+      // 정답 1개당 받은 4초의 러닝시간을 소모
+      runTimeRemaining = Math.max(0, runTimeRemaining - dt);
+      $('#runTimeLeft').textContent = runTimeRemaining.toFixed(1) + '초';
+
+      // 벨트가 빨라질수록 가만히 있어도 조금 더 강하게 뒤로 끌림
+      position -= dt*(.055 + speed*.012);
+
+      $('#runDistance').textContent = distance.toFixed(1)+'m';
+
+      updateTimeItem(dt);
+
+      if(runTimeRemaining <= 0){
+        $('#runFeedback').textContent = '시간 종료!';
+        gameOver();
+        return;
+      }
+
+      if(!inputLocked){
+        const ratio = Math.min(1,(now-promptStart)/promptWindow);
+        $('#inputTimerFill').style.transform = `scaleX(${Math.max(0,1-ratio)})`;
+      }
+
+      setRunner();
+      if(position <= 0){ gameOver(); return; }
+
+      lastFrame = now;
+      runRAF = requestAnimationFrame(frame);
+    };
+    runRAF = requestAnimationFrame(frame);
+  }
+
+  function startRun(){
+    ensureAudio();
+    show('#runScreen');
+    gameEnded = false;
+    penaltyMode = false;
+    inputLocked = false;
+    position = clamp(correct*3,0,MAX_POS);
+    distance = 0;
+    streak = 0;
+    bestStreak = 0;
+    runPromptCount = 0;
+    speed = quizStartSpeed;
+
+    // 정답 1개당 러닝머신 게임시간 4초
+    runTimeLimit = correct * 4;
+    runTimeRemaining = runTimeLimit;
+
+    $('#streakText').textContent = '0';
+    $('#runDistance').textContent = '0.0m';
+    $('#runTimeLeft').textContent = runTimeRemaining.toFixed(1) + '초';
+    $('#penaltyOverlay').classList.add('hidden');
+    clearTimeItem();
+    scheduleNextTimeItem();
+    setKeysDisabled(false);
+    $('#belt').style.setProperty('--track-play','running');
+    updateSpeedUI();
+    setRunner();
+
+    // 정답이 0개면 러닝게임 없이 바로 종료
+    if(runTimeLimit <= 0){
+      $('#runFeedback').textContent = '정답이 없어 러닝시간이 없습니다.';
+      setTimeout(gameOver,500);
+      return;
+    }
+
+    runStart = performance.now();
+    newPrompt();
+    startRunLoop();
+
+    // 입력창이나 버튼에 남아 있는 포커스를 제거한 뒤 러닝 화면으로 이동
+    if(document.activeElement && typeof document.activeElement.blur === 'function'){
+      document.activeElement.blur();
+    }
+    requestAnimationFrame(()=>{
+      try{ $('#runScreen').focus({preventScroll:true}); }
+      catch(e){ $('#runScreen').focus(); }
+    });
+  }
+
+  async function gameOver(){
+    if(gameEnded) return;
+    gameEnded = true;
+    cancelAnimationFrame(runRAF);
+    cancelAnimationFrame(penaltyRAF);
+    clearTimeout(promptTimer);
+    clearInterval(readyTimer);
+    clearTimeItem();
+    penaltyMode = false;
+    inputLocked = true;
+    setKeysDisabled(true);
+
+    $('#rankResult').textContent = '온라인 기록 저장 중...';
+    show('#gameOverScreen');
+
+    const result = await saveRanking(nickname,distance);
+    let rankText = '';
+    if(result.status === 'fallback') rankText = '온라인 랭킹 연결 실패 · 이 기기에 임시 저장됨';
+    else if(result.status === 'updated' && result.rank) rankText = `기존 기록을 갱신했습니다! 현재 ${result.rank}위`;
+    else if(result.status === 'new' && result.rank) rankText = `TOP10 진입! 현재 ${result.rank}위`;
+    else if(result.status === 'notHigher' && result.rank) rankText = `기존 최고 기록이 더 높습니다. 현재 ${result.rank}위`;
+    else if(result.status === 'notHigher') rankText = '기존 최고 기록이 더 높습니다.';
+    else rankText = 'TOP10 진입에는 조금 못 미쳤습니다.';
+
+    $('#finalDistance').textContent = distance.toFixed(1)+'m';
+    $('#finalNickname').textContent = nickname;
+    $('#finalCorrect').textContent = correct;
+    $('#finalRunTime').textContent = runTimeLimit.toFixed(0)+'초';
+    $('#finalBestStreak').textContent = bestStreak;
+    $('#finalSpeed').textContent = 'x'+speed.toFixed(1);
+    $('#rankResult').textContent = rankText;
+  }
+
+  const keyMap = {
+    ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+    Up:'up', Down:'down', Left:'left', Right:'right'
+  };
+
+  function directionFromKeyboardEvent(e){
+    if(keyMap[e.key]) return keyMap[e.key];
+    if(keyMap[e.code]) return keyMap[e.code];
+    const byCode = {37:'left',38:'up',39:'right',40:'down'};
+    return byCode[e.keyCode] || byCode[e.which] || null;
+  }
+
+  function handleRunKeyDown(e){
+    const dir = directionFromKeyboardEvent(e);
+    if(!dir) return;
+
+    // 방향키의 브라우저 스크롤을 항상 막는다.
+    if(!$('#runScreen').classList.contains('hidden')){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    if($('#runScreen').classList.contains('hidden') || inputLocked || penaltyMode || gameEnded || e.repeat) return;
+
+    const btn = document.querySelector(`.key[data-dir="${dir}"]`);
+    if(btn) btn.classList.add('pressed');
+    resolveInput(dir);
+  }
+
+  function handleRunKeyUp(e){
+    const dir = directionFromKeyboardEvent(e);
+    if(!dir) return;
+    if(!$('#runScreen').classList.contains('hidden')){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const btn = document.querySelector(`.key[data-dir="${dir}"]`);
+    if(btn) btn.classList.remove('pressed');
+  }
+
+  // window + capture=true로 잡아서 포커스가 어느 요소에 있든 방향키가 동작하도록 한다.
+  window.addEventListener('keydown',handleRunKeyDown,true);
+  window.addEventListener('keyup',handleRunKeyUp,true);
+
+  document.querySelectorAll('.key').forEach(b=>{
+    const press = e => {
+      e.preventDefault();
+      if(b.disabled) return;
+      b.classList.add('pressed');
+      resolveInput(b.dataset.dir);
+    };
+    const release = () => b.classList.remove('pressed');
+
+    b.addEventListener('pointerdown', press);
+    b.addEventListener('pointerup', release);
+    b.addEventListener('pointercancel', release);
+    b.addEventListener('pointerleave', release);
+
+    // 키보드 접근성: 버튼에 포커스한 상태에서 Enter/Space 사용 가능
+    b.addEventListener('keydown', e => {
+      if((e.key === 'Enter' || e.key === ' ') && !b.disabled){
+        e.preventDefault();
+        b.classList.add('pressed');
+        resolveInput(b.dataset.dir);
+      }
+    });
+    b.addEventListener('keyup', release);
+  });
+
+  async function tryStart(){
+    const name = $('#nicknameInput').value.trim();
+    if(name.length < 2 || name.length > 12){
+      $('#startMessage').textContent = '닉네임을 2~12자로 입력해 주세요.';
+      $('#nicknameInput').focus();
+      return;
+    }
+
+    // 같은 닉네임으로 누구나 다시 플레이할 수 있다.
+    // 랭킹 저장 시에는 닉네임별 문서 1개만 사용하고 최고 기록만 남긴다.
+    nickname = name;
+    $('#startMessage').textContent = '';
+    beginQuiz();
+  }
+
+  $('#startBtn').addEventListener('click',tryStart);
+  $('#nicknameInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); tryStart(); }
+  });
+  $('#restartBtn').addEventListener('click',beginQuiz);
+  $('#homeBtn').addEventListener('click',async ()=>{
+    stopAll();
+    await renderRankings();
+    $('#nicknameInput').value = nickname;
+    $('#startMessage').textContent = '';
+    show('#startScreen');
+  });
+
+  // 탭을 벗어난 동안 시간/판정이 진행되지 않도록 보정
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){
+      hiddenAt = performance.now();
+      return;
+    }
+    if(!hiddenAt) return;
+    const gap = performance.now()-hiddenAt;
+
+    if(!$('#quizScreen').classList.contains('hidden')){
+      quizStart += gap;
+      questionStart += gap;
+    }
+    if(!$('#runScreen').classList.contains('hidden') && !penaltyMode && !gameEnded){
+      runStart += gap;
+      promptStart += gap;
+      lastFrame = performance.now();
+      clearTimeout(promptTimer);
+      if(!inputLocked){
+        const used = performance.now()-promptStart;
+        promptTimer = setTimeout(()=>resolveInput(null),Math.max(50,promptWindow-used));
+      }
+    }
+    hiddenAt = 0;
+  });
+
+  renderRankings();
+})();
+</script>
+</body>
+</html>
